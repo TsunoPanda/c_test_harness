@@ -1,12 +1,21 @@
 package CodeDependency;
+use strict;
 use feature 'state';
+
+### This is an idea that saving the file dependency map into the disk. ###
+### But it turned out that it is much slower than analyzing all text file. ###
+#use DBM::Deep;
+#tie(my %FileDependencyMap, "DBM::Deep", "depend.db");
+
+my %FileDependencyMap = ();
+
+my @AllFiles = ();
 
 use lib qw(./);
 use Exporter;
-@ISA = qw(Exporter);
-@EXPORT = qw(CodeDepandency_GetFileDependency);
+our @ISA = qw(Exporter);
+our @EXPORT = qw(CodeDepandency_GetFileDependency);
 
-our %FileDependencyMap;
 
 my $FIRST_TIME_TRUE = 0;
 my $FIRST_TIME_FALSE = 1;
@@ -24,11 +33,12 @@ sub SearchIncludePath
     }
 }
 
-sub MakeFileDependencyMap
+sub GetPathArrayByAnalyzingFileText
 {
-    my ($filePath, $incPaths) = @_;
+    my ($filePath, $incPaths, $includePathArray) = @_;
 
-    my $includePathArray = [];
+    # Initialize input array.
+    @{$includePathArray} = ();
 
     open(InFile, "< ".$filePath) or die("Can't open the source file.");
     while (my $line = <InFile>)
@@ -44,6 +54,14 @@ sub MakeFileDependencyMap
         }
     }
     close(InFile);
+}
+
+sub MakeFileDependencyMap
+{
+    my ($filePath, $incPaths) = @_;
+
+    my $includePathArray = [];
+    GetPathArrayByAnalyzingFileText($filePath, $incPaths, $includePathArray);
     $FileDependencyMap{$filePath} = $includePathArray;
 }
 
@@ -63,7 +81,7 @@ sub SearchAndSaveIncludeFiles
             if (-T $filePath)
             {
                 # make entry
-                $FileDependencyMap{$filePath} = "";
+                push(@AllFiles, $filePath);
             }
         }
 
@@ -77,8 +95,9 @@ sub InputFiles
 
     foreach my $file (@{$fileList})
     {
+        my $false = 0;
         # make entry
-        $FileDependencyMap{$file} = "";
+        push(@AllFiles, $file);
     }
 }
 
@@ -113,14 +132,13 @@ sub CodeDepandency_GetFileDependency
 {
     my ($fileList, $pathList) = @_;
 
-    %FileDependencyMap = ();
-    %FileDependencies = ();
+    my %FileDependencies = ();
 
     InputFiles($fileList);
 
     SearchAndSaveIncludeFiles($pathList);
 
-    foreach my $filePath (keys(%FileDependencyMap))
+    foreach my $filePath (@AllFiles)
     {
         MakeFileDependencyMap($filePath, $pathList);
     }
