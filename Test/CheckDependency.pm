@@ -1,4 +1,5 @@
 package CheckDependency;
+use feature 'state';
 
 use lib qw(./);
 use Exporter;
@@ -9,8 +10,6 @@ our %FileDependencyMap;
 
 my $FIRST_TIME_TRUE = 0;
 my $FIRST_TIME_FALSE = 1;
-
-my %GetDependTrace = ();
 
 sub SearchIncludePath
 {
@@ -85,6 +84,8 @@ sub InputFiles
 
 sub GetDependency
 {
+    state %GetDependTrace = ();
+
     my ($filePath, $firstTime, $dependingFiles) = @_;
 
     if ($firstTime == $FIRST_TIME_TRUE)
