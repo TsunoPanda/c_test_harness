@@ -1,10 +1,10 @@
-package CheckDependency;
+package CodeDependency;
 use feature 'state';
 
 use lib qw(./);
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(CheckDepandency_GetFileDependency CheckDepandency_IsObjFileLatest);
+@EXPORT = qw(CodeDepandency_GetFileDependency);
 
 our %FileDependencyMap;
 
@@ -82,7 +82,7 @@ sub InputFiles
     }
 }
 
-sub GetDependency
+sub MakeFileDependency
 {
     state %GetDependTrace = ();
 
@@ -104,12 +104,12 @@ sub GetDependency
         # If it is already exists, skip it to avoid infinite loop
         if (!exists($GetDependTrace{$dependedFile}))
         {
-            GetDependency($dependedFile, $FIRST_TIME_FALSE, $dependingFiles);
+            MakeFileDependency($dependedFile, $FIRST_TIME_FALSE, $dependingFiles);
         }
     }
 }
 
-sub CheckDepandency_GetFileDependency
+sub CodeDepandency_GetFileDependency
 {
     my ($fileList, $pathList) = @_;
 
@@ -128,9 +128,8 @@ sub CheckDepandency_GetFileDependency
     foreach my $cfile (@{$fileList})
     {
         my $dependList = [];
-        GetDependency($cfile, $FIRST_TIME_TRUE, $dependList);
+        MakeFileDependency($cfile, $FIRST_TIME_TRUE, $dependList);
         $FileDependencies{$cfile} = $dependList;
-
     }
 
     return %FileDependencies;

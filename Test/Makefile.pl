@@ -1,6 +1,6 @@
 use strict;
 use lib qw(./);
-use CheckDependency;
+use CodeDependency;
 use TimeStampComp;
 
 my $targetName = "TestProgram.exe";
@@ -108,7 +108,7 @@ sub CompileSources
 {
     my ($optionStr, $includeStr) = @_;
 
-    my %FileDependencies = CheckDepandency_GetFileDependency(\@cFileList, \@includePath);
+    my %FileDependencies = CodeDepandency_GetFileDependency(\@cFileList, \@includePath);
 
     # Start compiling
     foreach my $src_obj (@src_objFilePath)
