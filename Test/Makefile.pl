@@ -1,8 +1,7 @@
 use strict;
-use Data::Dumper;
-
 use lib qw(./);
 use CheckDependency;
+use TimeStampComp;
 
 my $targetName = "TestProgram.exe";
 
@@ -54,12 +53,13 @@ sub OptionArrayToCommand
 sub IncludePathArrayToCommand
 {
     my ($ref_optionArray) = @_;
+    my @includeOptions = ();
     foreach my $i_inPath (@{$ref_optionArray})
     {
-        $i_inPath = "-I ".$i_inPath;
+        push(@includeOptions, "-I ".$i_inPath);
     }
 
-    return OptionArrayToCommand($ref_optionArray);
+    return OptionArrayToCommand(\@includeOptions);
 }
 
 sub MakeObjectFilePathArray()
@@ -89,17 +89,35 @@ sub CreateObjectFolder
     system("if not exist ".$objTmp." mkdir ".$objTmp);
 }
 
+my $OBJ_IS_OUT_OF_DATE = 0;
+my $OBJ_IS_UP_TO_DATE  = 1;
+sub IsObjFileLatest
+{
+    my ($src, $obj, $dependList) = @_;
+    foreach my $dependFile (@{$dependList})
+    {
+        if(TimeStampComp_CompareFiles($dependFile, $obj) == $TimeStampComp::FILE1_IS_NEW)
+        {
+            return $OBJ_IS_OUT_OF_DATE;
+        }
+    }
+    return $OBJ_IS_UP_TO_DATE;
+}
 
 sub CompileSources
 {
     my ($optionStr, $includeStr) = @_;
+
+    my %FileDependencies = CheckDepandency_GetFileDependency(\@cFileList, \@includePath);
 
     # Start compiling
     foreach my $src_obj (@src_objFilePath)
     {
         if (-e $src_obj->{obj}) #$src_obj->{obj} exist?
         {
-            if(CheckDepandency_IsObjFileLatest($src_obj->{src}, $src_obj->{obj}) == $CheckDependency::OBJ_IS_OUT_OF_DATE)
+            my $dependList = %FileDependencies{$src_obj->{src}};
+
+            if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, $dependList) == $OBJ_IS_OUT_OF_DATE)
             {
                 # There are some source files modified. Let's compile.
             }
@@ -141,8 +159,6 @@ sub BuildTarget
 sub make()
 {
     MakeObjectFilePathArray();
-
-    CheckDepandency_Init(\@cFileList, \@includePath);
 
     my $option = OptionArrayToCommand(\@cOption);
     my $include = IncludePathArrayToCommand(\@includePath);

@@ -1,15 +1,10 @@
 package CheckDependency;
 
 use lib qw(./);
-use TimeStampComp;
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(CheckDepandency_Init CheckDepandency_IsObjFileLatest);
+@EXPORT = qw(CheckDepandency_GetFileDependency CheckDepandency_IsObjFileLatest);
 
-use Data::Dumper;
-
-our $OBJ_IS_OUT_OF_DATE = 0;
-our $OBJ_IS_UP_TO_DATE  = 1;
 our %FileDependencyMap;
 
 my $FIRST_TIME_TRUE = 0;
@@ -113,9 +108,12 @@ sub GetDependency
     }
 }
 
-sub CheckDepandency_Init
+sub CheckDepandency_GetFileDependency
 {
     my ($fileList, $pathList) = @_;
+
+    %FileDependencyMap = ();
+    %FileDependencies = ();
 
     InputFiles($fileList);
 
@@ -125,22 +123,16 @@ sub CheckDepandency_Init
     {
         MakeFileDependencyMap($filePath, $pathList);
     }
-}
 
-sub CheckDepandency_IsObjFileLatest
-{
-    my ($src, $obj) = @_;
-    my @dependList;
-
-    GetDependency($src, $FIRST_TIME_TRUE, \@dependList);
-    foreach my $dependFile (@dependList)
+    foreach my $cfile (@{$fileList})
     {
-        if(TimeStampComp_CompareFiles($dependFile, $obj) == $TimeStampComp::FILE1_IS_NEW)
-        {
-            return $OBJ_IS_OUT_OF_DATE;
-        }
+        my $dependList = [];
+        GetDependency($cfile, $FIRST_TIME_TRUE, $dependList);
+        $FileDependencies{$cfile} = $dependList;
+
     }
-    return $OBJ_IS_UP_TO_DATE;
+
+    return %FileDependencies;
 }
 
 1;
