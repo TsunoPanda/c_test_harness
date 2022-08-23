@@ -1,10 +1,11 @@
 package TimeStampComp;
-
+use strict;
 use Exporter;
-@ISA = qw(Exporter);
-@EXPORT = qw(TimeStampComp_CompareFiles TimeStampComp_GetTimeStampValue);
 
+our @ISA = qw(Exporter);
+our @EXPORT = qw(TimeStampComp_CompareFiles TimeStampComp_GetTimeStampValue);
 our %TimeStampList = ();
+
 our $FILE1_IS_NEW   = 0;
 our $FILE2_IS_NEW   = 1;
 our $SAME_TIMESTAMP = 2;
@@ -18,7 +19,7 @@ sub GetTimeStampValueByCheckingFileSystem
     # save the file time
     $TimeStampList{$file} = $file_time;
 
-    return $timestameValue;
+    return $file_time;
 }
 
 sub TimeStampComp_GetTimeStampValue
