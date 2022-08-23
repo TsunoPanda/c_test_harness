@@ -35,6 +35,8 @@ my @includePath =
 );
 
 my $objPath = "./Obj";
+
+# This is array of hashes. The hashes will have source path (key:src) and object path (key:obj)
 my @src_objFilePath = ();
 
 sub OptionArrayToCommand
@@ -135,14 +137,21 @@ sub IssueCompileCommand
     }
 }
 
-my $NO_COMPILE_ERROR = 0;
-my $AT_LEAST_ONE_COMPILE_ERROR = 1;
+my $NO_COMPILED_FILE = 0;
+my $NO_COMPILE_ERROR = 1;
+my $AT_LEAST_ONE_COMPILE_ERROR = 2;
 sub CompileSources
 {
     my ($optionStr, $includeStr) = @_;
     my %FileDependencies = CodeDepandency_GetFileDependency(\@cFileList, \@includePath);
     
-    my $state = $NO_COMPILE_ERROR;
+    my $no_compile_error = 0;
+    my $at_least_one_compiling_error = 1;
+    my $error_state = $no_compile_error;
+
+    my $no_compiled_file = 0;
+    my $at_least_one_compiled_file = 1;
+    my $compile_state = $no_compiled_file;
 
     # Start compiling
     foreach my $src_obj (@src_objFilePath)
@@ -154,9 +163,10 @@ sub CompileSources
             if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, $dependList) == $OBJ_IS_OUT_OF_DATE)
             {
                 # There are some source files modified. Let's compile.
+                $compile_state = $at_least_one_compiled_file;
                 if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == $COMPILE_ERROR)
                 {
-                    $state = $AT_LEAST_ONE_COMPILE_ERROR;
+                    $error_state = $at_least_one_compiling_error;
                 }
             }
             else
@@ -169,14 +179,29 @@ sub CompileSources
         else
         {
             # Object file is not exists. Let's compile.
-                if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == $COMPILE_ERROR)
-                {
-                    $state = $AT_LEAST_ONE_COMPILE_ERROR;
-                }
+            $compile_state = $at_least_one_compiled_file;
+            if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == $COMPILE_ERROR)
+            {
+                $error_state = $at_least_one_compiling_error;
+            }
         }
     }
 
-    return $state;
+    if($compile_state == $no_compiled_file)
+    {
+        return $NO_COMPILED_FILE;
+    }
+    else
+    {
+        if($error_state == $no_compile_error)
+        {
+            return $NO_COMPILE_ERROR
+        }
+        else
+        {
+            return $AT_LEAST_ONE_COMPILE_ERROR
+        }
+    }
 }
 
 sub BuildTarget
@@ -195,23 +220,57 @@ sub BuildTarget
     system($cmd);
 }
 
-sub make()
+my $option = "";
+my $include = "";
+
+sub Makefile_Init()
 {
     MakeObjectFilePathArray();
 
-    my $option = OptionArrayToCommand(\@cOption);
-    my $include = IncludePathArrayToCommand(\@includePath);
+    $option = OptionArrayToCommand(\@cOption);
+    $include = IncludePathArrayToCommand(\@includePath);
+}
 
+sub Makefile_make()
+{
     CreateObjectFolder();
 
-    if(CompileSources($option, $include) == $NO_COMPILE_ERROR)
+    my $compile_state = CompileSources($option, $include);
+    if($compile_state == $NO_COMPILED_FILE)
+    {
+        if(-e './'.$targetName)
+        {
+            printf("Skip linking, because nothing has been updated.\n");
+        }
+        else
+        {
+            BuildTarget($option, $targetName);
+        }
+    }
+    elsif($compile_state == $NO_COMPILE_ERROR)
     {
         BuildTarget($option, $targetName);
     }
-    else
+    else # $compile_state = $AT_LEAST_ONE_COMPILE_ERROR
     {
         printf("Skip linking, because at least one compile error happened.\n");
     }
 }
 
-make();
+sub Makefile_clear()
+{
+    foreach my $hash_src_obj (@src_objFilePath)
+    {
+        unlink $hash_src_obj->{obj};
+    }
+    unlink $targetName;
+}
+
+sub Makefile_rebuild()
+{
+    Makefile_clear();
+    Makefile_make();
+}
+
+Makefile_Init();
+Makefile_make();
