@@ -104,11 +104,45 @@ sub IsObjFileLatest
     return $OBJ_IS_UP_TO_DATE;
 }
 
+my $COMPILE_SUCCEEDED = 0;
+my $COMPILE_ERROR     = 1;
+sub IssueCompileCommand
+{
+    my ($cCompiler, $optionStr, $includeStr, $src_obj) = @_;
+
+    # Make compiling command
+    my $compile_cmd = $cCompiler." ".$optionStr." ".$includeStr." -c ".$src_obj->{src}." -o ".$src_obj->{obj};
+
+    # Adding '2>&1' means send stderr(2) to the same place as stdout (&1))
+    $compile_cmd = $compile_cmd.' 2>&1';
+
+    # Display the command.
+    printf($compile_cmd."\n");
+
+    # Execute the command and get the STDOUT using 'qx//' syntax.
+    my $output = qx/$compile_cmd/;
+
+    # Display the result.
+    printf($output);
+
+    if($output =~ /error/)
+    {
+        return $COMPILE_ERROR;
+    }
+    else
+    {
+        return $COMPILE_SUCCEEDED;
+    }
+}
+
+my $NO_COMPILE_ERROR = 0;
+my $AT_LEAST_ONE_COMPILE_ERROR = 1;
 sub CompileSources
 {
     my ($optionStr, $includeStr) = @_;
-
     my %FileDependencies = CodeDepandency_GetFileDependency(\@cFileList, \@includePath);
+    
+    my $state = $NO_COMPILE_ERROR;
 
     # Start compiling
     foreach my $src_obj (@src_objFilePath)
@@ -120,6 +154,10 @@ sub CompileSources
             if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, $dependList) == $OBJ_IS_OUT_OF_DATE)
             {
                 # There are some source files modified. Let's compile.
+                if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == $COMPILE_ERROR)
+                {
+                    $state = $AT_LEAST_ONE_COMPILE_ERROR;
+                }
             }
             else
             {
@@ -131,13 +169,14 @@ sub CompileSources
         else
         {
             # Object file is not exists. Let's compile.
+                if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == $COMPILE_ERROR)
+                {
+                    $state = $AT_LEAST_ONE_COMPILE_ERROR;
+                }
         }
-
-        # Compiling here
-        my $cmd = $cCompiler." ".$optionStr." ".$includeStr." -c ".$src_obj->{src}." -o ".$src_obj->{obj};
-        printf($cmd."\n");
-        system($cmd);
     }
+
+    return $state;
 }
 
 sub BuildTarget
@@ -165,9 +204,14 @@ sub make()
 
     CreateObjectFolder();
 
-    CompileSources($option, $include);
-
-    BuildTarget($option, $targetName);
+    if(CompileSources($option, $include) == $NO_COMPILE_ERROR)
+    {
+        BuildTarget($option, $targetName);
+    }
+    else
+    {
+        printf("Skip linking, because at least one compile error happened.\n");
+    }
 }
 
 make();
