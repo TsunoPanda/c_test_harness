@@ -13,15 +13,9 @@ use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(CodeDepandency_GetFileRelationMap);
 
-# Second Input of MakeFileDependency
-# Enumeration: $FIRST_TIME_TRUE: MakeFileDependency was called first time.
-#              $FIRST_TIME_FALSE: MakeFileDependency was called recursively.
-my $gFIRST_TIME_TRUE  = 0;
-my $gFIRST_TIME_FALSE = 1;
-
-# This returns full path of the input file as the first parameter "$incFile"
-# by searching in the include folder locations input as the second parameter "$aIncPaths".
-# It returns "" if no file found.
+# This function returns full path of the file input as the first parameter "$incFile"
+# by searching in the include folders input as the second parameter "$aIncPaths".
+# It returns "" if no file found in the folders.
 sub GetFullPath
 {
     # $incFile: An include file to be searched for the folders.
@@ -43,8 +37,8 @@ sub GetFullPath
     return "";
 }
 
-# This function searches for the text files inside the folders which was input.
-# And stores the full path of the found files into a global variable.
+# This function searches for the text files under the folders input as the second parameter.
+# And stores the full path of the found files into an array input as the first parameter.
 sub PushTextFilesUnderIncludePaths
 {
     # $aAllFiles: Reference to an array to be contains all source file paths.
@@ -76,6 +70,7 @@ sub PushTextFilesUnderIncludePaths
     }
 }
 
+# This function returns an array containing all source file which can be involved in the program
 sub GetListOfSourceFiles
 {
     # $aAllFiles: Reference to an array to be contains all source file paths.
@@ -96,9 +91,9 @@ sub GetListOfSourceFiles
     return @aAllSourceFiles;
 }
 
-# This function search for line which contains a C preprocessor  command '#include "xxxx"'
-# inside the input text file at the one of the input include folders.
-# And it returns the all name of included files as an array.
+# This function searches for the lines which contains a C preprocessor command '#include "xxxx"'
+# inside the input text file found in the include folders.
+# And it saves the all name of included files into an array input as a parameter.
 sub MakeDirectlyRelatedFilePathArray
 {
     # $filePath: A source file to be searched into.
@@ -137,9 +132,11 @@ sub MakeDirectlyRelatedFilePathArray
     close(InFile);
 }
 
+# This function returns the direct relation map which has file paths as keys and
+# and has arrays of file paths, which is included directly by the key file, as the value.
 sub GetDirectRelationMap
 {
-    # $filePaths: 
+    # $afilePaths: Array containing all files which can be involved in the program
     # $aIncPaths: Include paths where this function will search for the input file.
     my ($afilePaths, $aIncPaths) = @_;
 
@@ -168,12 +165,15 @@ sub GetDirectRelationMap
 # Note: This function is recursive function.
 sub MakeRelatedFilePathArray
 {
-    # $filePath: Related file to be stored into the array
+    # $filePath: File path, the relation of this file will be stored into the map
     # $hDirectRelationMap: Reference to the included file map.
     # $aRelatingFiles: Reference to the array where the result will be saved
-    # $firstTime: Input $FIRST_TIME_TRUE or nothing when calling this function in other functions.
-    #             Input $FIRST_TIME_FALSE when calling this function in this function.
-    my ($filePath, $hDirectRelationMap, $aRelatingFiles, $firstTime) = @_;
+    # $firstTime: Input FIRST_TIME or NOTHING when calling this function in other functions.
+    #             Input NOT_FIRST_TIME when calling this function in this function.
+    my ($filePath, $hDirectRelationMap, $aRelatingFiles, $isFirstTime) = @_;
+
+    use constant FIRST_TIME     => 0; # MakeRelatedFilePathArray was called first time.
+    use constant NOT_FIRST_TIME => 1; # MakeRelatedFilePathArray was called recursively.
 
     # Hash to be used for avoiding duplication of the result and avoid infinite loop.
     # (e.g. headerA.h -> headerB.h -> headerA.h -->....)
@@ -183,14 +183,14 @@ sub MakeRelatedFilePathArray
     state $CallCounter = 0;
 
     # If NOT $firstTime is defined
-    unless (defined $firstTime)
+    unless (defined $isFirstTime)
     {
         # Assumed it is the first time
-        $firstTime = $gFIRST_TIME_TRUE;
+        $isFirstTime = FIRST_TIME;
     }
 
     # If it is the first time, then initialize all static variables.
-    if ($firstTime == $gFIRST_TIME_TRUE)
+    if ($isFirstTime == FIRST_TIME)
     {
         # Initialize the result array.
         @{$aRelatingFiles} = ();
@@ -228,15 +228,16 @@ sub MakeRelatedFilePathArray
         if (!exists($hGetDependTrace{$dependedFile}))
         {
             # Get all related files of the related files of the input file.
-            MakeRelatedFilePathArray($dependedFile, $hDirectRelationMap, $aRelatingFiles, $gFIRST_TIME_FALSE);
+            MakeRelatedFilePathArray($dependedFile, $hDirectRelationMap, $aRelatingFiles, NOT_FIRST_TIME);
         }
     }
 }
 
+# This function returns the relation map from source file paths and direct relation map.
 sub GetRelationMap
 {
-    # $aCfilePaths: Related file to be stored into the array
-    # $hDirectRelationMap: Reference to the included file map.
+    # $aCfilePaths: Reference to the array containing source file paths
+    # $hDirectRelationMap: Reference to the file direct relation map.
     my ($aCfilePaths, $hDirectRelationMap) = @_;
 
     # Define and initialize output hash
