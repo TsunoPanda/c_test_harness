@@ -1,4 +1,4 @@
-#include "math.h"
+#include "MyMath.h"
 
 int math_add(int a, int b)
 {
