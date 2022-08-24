@@ -65,7 +65,7 @@ sub PushTextFilesUnderIncludePaths
             }
         }
 
-        # close the folder
+        # Close the folder
         closedir(DIRHANDLE);
     }
 }
@@ -261,8 +261,8 @@ sub GetRelationMap
 }
 
 # This function returns a hash.
-# The key of the hash is path of all source files input as the first parameter.
-# And the value related to a key is a reference to the array
+# The key of the hash is the path of all source files input as the first parameter.
+# And the value related to the key is a reference to the array 
 # that contains paths to the all files related to the key file.
 # The related files are searched into the path lists input as the second parameter.
 sub CodeDepandency_GetFileRelationMap
@@ -276,7 +276,7 @@ sub CodeDepandency_GetFileRelationMap
 
     # This will contain all source file path as a key. 
     # And the key points an array which contains all files included by the key file.
-    my %hDirectRelationMap = GetDirectRelationMap(\@aAllSourceFiles, $aPathList);;
+    my %hDirectRelationMap = GetDirectRelationMap(\@aAllSourceFiles, $aPathList);
 
     # This hash is the file relation map having the information all related files
     # for all .c files.
