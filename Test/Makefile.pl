@@ -143,7 +143,7 @@ my $AT_LEAST_ONE_COMPILE_ERROR = 2;
 sub CompileSources
 {
     my ($optionStr, $includeStr) = @_;
-    my %FileDependencies = CodeDepandency_GetFileDependency(\@cFileList, \@includePath);
+    my %FileDependencies = CodeDepandency_GetFileRelationMap(\@cFileList, \@includePath);
     
     my $no_compile_error = 0;
     my $at_least_one_compiling_error = 1;
