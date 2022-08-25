@@ -45,6 +45,9 @@ use constant FILE1_IS_NEW   => 0;
 use constant FILE2_IS_NEW   => 1;
 use constant SAME_TIMESTAMP => 2;
 
+use constant OBJ_IS_OUT_OF_DATE => 0;
+use constant OBJ_IS_UP_TO_DATE  => 1;
+
 sub GetTimeStampValueByCheckingFileSystem
 {
     my ($file) = @_;
@@ -151,8 +154,6 @@ sub CreateObjectFolder
     system("if not exist ".$objTmp." mkdir ".$objTmp);
 }
 
-my $OBJ_IS_OUT_OF_DATE = 0;
-my $OBJ_IS_UP_TO_DATE  = 1;
 sub IsObjFileLatest
 {
     my ($src, $obj, $dependList) = @_;
@@ -160,10 +161,10 @@ sub IsObjFileLatest
     {
         if(CompareFileTimestamps($dependFile, $obj) == FILE1_IS_NEW)
         {
-            return $OBJ_IS_OUT_OF_DATE;
+            return OBJ_IS_OUT_OF_DATE;
         }
     }
-    return $OBJ_IS_UP_TO_DATE;
+    return OBJ_IS_UP_TO_DATE;
 }
 
 my $COMPILE_SUCCEEDED = 0;
@@ -220,7 +221,7 @@ sub CompileSources
         {
             my @dependList = GetRelatedFileList($src_obj->{dep});
 
-            if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, \@dependList) == $OBJ_IS_OUT_OF_DATE)
+            if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, \@dependList) == OBJ_IS_OUT_OF_DATE)
             {
                 # There are some source files modified. Let's compile.
                 $compile_state = $at_least_one_compiled_file;
