@@ -1,7 +1,7 @@
 use strict;
 use lib qw(./);
-use CodeDependency;
-use TimeStampComp;
+use feature 'state';
+use Time::HiRes qw( usleep gettimeofday tv_interval );
 
 my $targetName = "TestProgram.exe";
 
@@ -11,6 +11,7 @@ my @cOption =
 (
     "-Wall",
     "-O2",
+    "-MMD",
 );
 
 my @cFileList =
@@ -38,6 +39,64 @@ my $objPath = "./Obj";
 
 # This is array of hashes. The hashes will have source path (key:src) and object path (key:obj)
 my @src_objFilePath = ();
+
+
+use constant FILE1_IS_NEW   => 0;
+use constant FILE2_IS_NEW   => 1;
+use constant SAME_TIMESTAMP => 2;
+
+sub GetTimeStampValueByCheckingFileSystem
+{
+    my ($file) = @_;
+
+    my @filestat = stat $file;
+
+    my $file_time = $filestat[9];
+
+    return $file_time;
+}
+
+sub GetTimeStampValue
+{
+    my ($file) = @_;
+
+    state %TimeStampList = ();
+
+    if (exists($TimeStampList{$file}))
+    {
+        # get the value from the hash.
+        return $TimeStampList{$file};
+    }
+    else
+    {
+        my $file_time = GetTimeStampValueByCheckingFileSystem($file);
+
+        # save the file time
+        $TimeStampList{$file} = $file_time;
+
+        return $file_time;
+    }
+}
+
+sub CompareFileTimestamps
+{
+    my ($file1, $file2) = @_;
+
+    my $timestameValue1 = GetTimeStampValue($file1);
+    my $timestameValue2 = GetTimeStampValue($file2);
+    if ($timestameValue1 < $timestameValue2)
+    {
+        return FILE2_IS_NEW;
+    }
+    elsif ($timestameValue1 > $timestameValue2)
+    {
+        return FILE1_IS_NEW;
+    }
+    else
+    {
+        return SAME_TIMESTAMP;
+    }
+}
 
 sub OptionArrayToCommand
 {
@@ -74,6 +133,7 @@ sub MakeObjectFilePathArray()
             my $src_obj = {'src' => "", 'obj' => ""};
             $src_obj->{'src'} = $i_cFile;
             $src_obj->{'obj'} = $objPath.$1.".o";
+            $src_obj->{'dep'} = $objPath.$1.".d";
             push(@src_objFilePath, $src_obj);
         }
         else
@@ -98,7 +158,7 @@ sub IsObjFileLatest
     my ($src, $obj, $dependList) = @_;
     foreach my $dependFile (@{$dependList})
     {
-        if(TimeStampComp_CompareFiles($dependFile, $obj) == $TimeStampComp::FILE1_IS_NEW)
+        if(CompareFileTimestamps($dependFile, $obj) == FILE1_IS_NEW)
         {
             return $OBJ_IS_OUT_OF_DATE;
         }
@@ -143,7 +203,6 @@ my $AT_LEAST_ONE_COMPILE_ERROR = 2;
 sub CompileSources
 {
     my ($optionStr, $includeStr) = @_;
-    my %FileDependencies = CodeDepandency_GetFileRelationMap(\@cFileList, \@includePath);
     
     my $no_compile_error = 0;
     my $at_least_one_compiling_error = 1;
@@ -156,11 +215,12 @@ sub CompileSources
     # Start compiling
     foreach my $src_obj (@src_objFilePath)
     {
-        if (-e $src_obj->{obj}) #$src_obj->{obj} exist?
+        #$src_obj->{obj} and $src_obj->{dep} exist?
+        if (-e $src_obj->{obj} && -e $src_obj->{dep})
         {
-            my $dependList = %FileDependencies{$src_obj->{src}};
+            my @dependList = GetRelatedFileList($src_obj->{dep});
 
-            if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, $dependList) == $OBJ_IS_OUT_OF_DATE)
+            if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, \@dependList) == $OBJ_IS_OUT_OF_DATE)
             {
                 # There are some source files modified. Let's compile.
                 $compile_state = $at_least_one_compiled_file;
@@ -220,9 +280,35 @@ sub BuildTarget
     system($cmd);
 }
 
+sub GetRelatedFileList
+{
+    my ($dFilePath) = @_;
+
+    my @fileList = ();
+
+    # Open the target text file.
+    open(InFile, "< ".$dFilePath) or die("Can't open the dependency file.");
+
+    # Read the file line by line.
+    while (my $line = <InFile>)
+    {
+        # clean the line string
+        $line =~ s/.+\://g; # Remove the object file
+        $line =~ s/\\//g; # Remove '/'
+        $line =~ s/^ //g; # Remove a space at the top.
+
+        # If the line contains '#include "xxxx"' ?
+        push(@fileList, split(/\s+/, $line));
+    }
+
+    # Close the target text file.
+    close(InFile);
+
+    return @fileList;
+}
+
 my $option = "";
 my $include = "";
-
 sub Makefile_Init()
 {
     MakeObjectFilePathArray();
@@ -272,5 +358,13 @@ sub Makefile_rebuild()
     Makefile_make();
 }
 
+my $t0 = [gettimeofday];
+
 Makefile_Init();
 Makefile_make();
+
+my $elapsed = tv_interval($t0);
+
+my $process_time = $elapsed*1000;
+printf("Process time = ".$process_time." ms");
+
