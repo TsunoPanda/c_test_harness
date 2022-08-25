@@ -209,7 +209,7 @@ sub MakeRelatedFilePathArray
     if($CallCounter > 1000)
     {
         # Display message
-        printf("Too long recursive call of AddFileRelationToTheMap in CodeDependency module.\n");
+        printf("Too long recursive call of MakeRelatedFilePathArray in CodeDependency module.\n");
 
         # abort this program
         exit(1);
