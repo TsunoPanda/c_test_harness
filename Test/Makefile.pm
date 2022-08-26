@@ -6,19 +6,18 @@ use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(Makefile_Init Makefile_make Makefile_clear Makefile_rebuild);
 
+my $gTargetName = "TestProgram.exe";
 
-my $targetName = "TestProgram.exe";
+my $gCompiler = "gcc";
 
-my $cCompiler = "gcc";
-
-my @cOption = 
+my @gaOptions = 
 (
     "-Wall",
     "-O2",
     "-MMD",
 );
 
-my @cFileList =
+my @gaSourceFiles =
 (
     "../ProductCode/LedDriver/LedDriver.c",
     "../ProductCode/MyMath/MyMath.c",
@@ -31,7 +30,7 @@ my @cFileList =
     "./TestRunner/test_main.c",
 );
 
-my @includePath =
+my @gaIncludePaths =
 (
     "../ProductCode/LedDriver/",
     "../ProductCode/MyMath/",
@@ -39,15 +38,13 @@ my @includePath =
     "./TestHarness/"
 );
 
-my $objPath = "./Obj";
+my $gObjPath = "./Obj";
 
 # This is array of hashes. The hashes will have source path (key:src) and object path (key:obj)
-my @src_objFilePath = ();
-
-my %TimeStampList = ();
-
-my $option = "";
-my $include = "";
+our @gaAllRelevantFiles   = ();
+our %ghSavedTimeStampList = ();
+our $gOptionString        = "";
+our $gIncludeString       = "";
 
 use constant FALSE => 0;
 use constant TRUE  => 1;
@@ -62,8 +59,8 @@ use constant OBJ_IS_UP_TO_DATE  => 1;
 use constant COMPILE_SUCCEEDED => 0;
 use constant COMPILE_ERROR     => 1;
 
-use constant NO_COMPILED_FILE => 0;
-use constant NO_COMPILE_ERROR => 1;
+use constant NO_COMPILED_FILE           => 0;
+use constant NO_COMPILE_ERROR           => 1;
 use constant AT_LEAST_ONE_COMPILE_ERROR => 2;
 
 sub GetTimeStampValueByCheckingFileSystem
@@ -81,17 +78,17 @@ sub GetTimeStampValue
 {
     my ($file) = @_;
 
-    if (exists($TimeStampList{$file}))
+    if (exists($ghSavedTimeStampList{$file}))
     {
         # get the value from the hash.
-        return $TimeStampList{$file};
+        return $ghSavedTimeStampList{$file};
     }
     else
     {
         my $file_time = GetTimeStampValueByCheckingFileSystem($file);
 
         # save the file time
-        $TimeStampList{$file} = $file_time;
+        $ghSavedTimeStampList{$file} = $file_time;
 
         return $file_time;
     }
@@ -152,15 +149,15 @@ sub IncludePathArrayToCommand
 sub MakeObjectFilePathArray()
 {
     # Make Object file paths
-    foreach my $i_cFile (@cFileList)
+    foreach my $i_cFile (@gaSourceFiles)
     {
         if ($i_cFile =~ /.*(\/.+)\.c/)
         {
-            my $src_obj = {'src' => "", 'obj' => ""};
+            my $src_obj = {'src' => "", 'obj' => "", 'dep' => ""};
             $src_obj->{'src'} = $i_cFile;
-            $src_obj->{'obj'} = $objPath.$1.".o";
-            $src_obj->{'dep'} = $objPath.$1.".d";
-            push(@src_objFilePath, $src_obj);
+            $src_obj->{'obj'} = $gObjPath.$1.".o";
+            $src_obj->{'dep'} = $gObjPath.$1.".d";
+            push(@gaAllRelevantFiles, $src_obj);
         }
         else
         {
@@ -172,7 +169,7 @@ sub MakeObjectFilePathArray()
 
 sub CreateObjectFolder
 {
-    my $objTmp = $objPath;
+    my $objTmp = $gObjPath;
 
     $objTmp =~ s/\//\\/g;
 
@@ -232,7 +229,7 @@ sub CompileSources
     my $IsCompiledFileExist = FALSE;
 
     # Start compiling
-    foreach my $src_obj (@src_objFilePath)
+    foreach my $src_obj (@gaAllRelevantFiles)
     {
         #$src_obj->{obj} and $src_obj->{dep} exist?
         if (-e $src_obj->{obj} && -e $src_obj->{dep})
@@ -243,7 +240,7 @@ sub CompileSources
             {
                 # There are some source files modified. Let's compile.
                 $IsCompiledFileExist = TRUE;
-                if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
+                if(IssueCompileCommand($gCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
                 {
                     $IsCompileError = TRUE;
                 }
@@ -259,7 +256,7 @@ sub CompileSources
         {
             # Object file is not exists. Let's compile.
             $IsCompiledFileExist = TRUE;
-            if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
+            if(IssueCompileCommand($gCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
             {
                 $IsCompileError = TRUE;
             }
@@ -288,12 +285,12 @@ sub BuildTarget
     my ($optionStr, $targetStr) = @_;
 
     my $objectsStr = "";
-    foreach my $src_obj (@src_objFilePath)
+    foreach my $src_obj (@gaAllRelevantFiles)
     {
         $objectsStr = $objectsStr.$src_obj->{'obj'}." "
     }
 
-    my $cmd = $cCompiler." ".$optionStr." -o ".$targetStr." ".$objectsStr;
+    my $cmd = $gCompiler." ".$optionStr." -o ".$targetStr." ".$objectsStr;
 
     printf($cmd."\n");
     system($cmd);
@@ -328,38 +325,38 @@ sub GetRelatedFileList
 
 sub Makefile_Init()
 {
-    @src_objFilePath = ();
+    @gaAllRelevantFiles = ();
 
-    %TimeStampList = ();
+    %ghSavedTimeStampList = ();
 
-    $option = "";
-    $include = "";
+    $gOptionString = "";
+    $gIncludeString = "";
 
     MakeObjectFilePathArray();
 
-    $option = OptionArrayToCommand(\@cOption);
-    $include = IncludePathArrayToCommand(\@includePath);
+    $gOptionString = OptionArrayToCommand(\@gaOptions);
+    $gIncludeString = IncludePathArrayToCommand(\@gaIncludePaths);
 }
 
 sub Makefile_make()
 {
     CreateObjectFolder();
 
-    my $compile_state = CompileSources($option, $include);
+    my $compile_state = CompileSources($gOptionString, $gIncludeString);
     if($compile_state == NO_COMPILED_FILE)
     {
-        if(-e './'.$targetName)
+        if(-e './'.$gTargetName)
         {
             printf("Skip linking, because nothing has been updated.\n");
         }
         else
         {
-            BuildTarget($option, $targetName);
+            BuildTarget($gOptionString, $gTargetName);
         }
     }
     elsif($compile_state == NO_COMPILE_ERROR)
     {
-        BuildTarget($option, $targetName);
+        BuildTarget($gOptionString, $gTargetName);
     }
     else # $compile_state = AT_LEAST_ONE_COMPILE_ERROR
     {
@@ -369,11 +366,12 @@ sub Makefile_make()
 
 sub Makefile_clear()
 {
-    foreach my $hash_src_obj (@src_objFilePath)
+    foreach my $hash_src_obj (@gaAllRelevantFiles)
     {
         unlink $hash_src_obj->{obj};
+        unlink $hash_src_obj->{dep};
     }
-    unlink $targetName;
+    unlink $gTargetName;
 }
 
 sub Makefile_rebuild()
