@@ -46,12 +46,25 @@ my @src_objFilePath = ();
 
 my %TimeStampList = ();
 
+my $option = "";
+my $include = "";
+
+use constant FALSE => 0;
+use constant TRUE  => 1;
+
 use constant FILE1_IS_NEW   => 0;
 use constant FILE2_IS_NEW   => 1;
 use constant SAME_TIMESTAMP => 2;
 
 use constant OBJ_IS_OUT_OF_DATE => 0;
 use constant OBJ_IS_UP_TO_DATE  => 1;
+
+use constant COMPILE_SUCCEEDED => 0;
+use constant COMPILE_ERROR     => 1;
+
+use constant NO_COMPILED_FILE => 0;
+use constant NO_COMPILE_ERROR => 1;
+use constant AT_LEAST_ONE_COMPILE_ERROR => 2;
 
 sub GetTimeStampValueByCheckingFileSystem
 {
@@ -89,7 +102,9 @@ sub CompareFileTimestamps
     my ($file1, $file2) = @_;
 
     my $timestameValue1 = GetTimeStampValue($file1);
+
     my $timestameValue2 = GetTimeStampValue($file2);
+
     if ($timestameValue1 < $timestameValue2)
     {
         return FILE2_IS_NEW;
@@ -109,18 +124,23 @@ sub OptionArrayToCommand
     my ($ref_optionArray) = @_;
 
     my $cFlag = "";
+
     foreach my $i_cFlag (@{$ref_optionArray})
     {
         $cFlag = $cFlag.$i_cFlag." ";
     }
+
     chop($cFlag);
+
     return $cFlag;
 }
 
 sub IncludePathArrayToCommand
 {
     my ($ref_optionArray) = @_;
+
     my @includeOptions = ();
+
     foreach my $i_inPath (@{$ref_optionArray})
     {
         push(@includeOptions, "-I ".$i_inPath);
@@ -153,13 +173,16 @@ sub MakeObjectFilePathArray()
 sub CreateObjectFolder
 {
     my $objTmp = $objPath;
+
     $objTmp =~ s/\//\\/g;
+
     system("if not exist ".$objTmp." mkdir ".$objTmp);
 }
 
 sub IsObjFileLatest
 {
     my ($src, $obj, $dependList) = @_;
+
     foreach my $dependFile (@{$dependList})
     {
         if(CompareFileTimestamps($dependFile, $obj) == FILE1_IS_NEW)
@@ -167,11 +190,10 @@ sub IsObjFileLatest
             return OBJ_IS_OUT_OF_DATE;
         }
     }
+
     return OBJ_IS_UP_TO_DATE;
 }
 
-my $COMPILE_SUCCEEDED = 0;
-my $COMPILE_ERROR     = 1;
 sub IssueCompileCommand
 {
     my ($cCompiler, $optionStr, $includeStr, $src_obj) = @_;
@@ -193,28 +215,21 @@ sub IssueCompileCommand
 
     if($output =~ /error/)
     {
-        return $COMPILE_ERROR;
+        return COMPILE_ERROR;
     }
     else
     {
-        return $COMPILE_SUCCEEDED;
+        return COMPILE_SUCCEEDED;
     }
 }
 
-my $NO_COMPILED_FILE = 0;
-my $NO_COMPILE_ERROR = 1;
-my $AT_LEAST_ONE_COMPILE_ERROR = 2;
 sub CompileSources
 {
     my ($optionStr, $includeStr) = @_;
     
-    my $no_compile_error = 0;
-    my $at_least_one_compiling_error = 1;
-    my $error_state = $no_compile_error;
+    my $IsCompileError = FALSE;
 
-    my $no_compiled_file = 0;
-    my $at_least_one_compiled_file = 1;
-    my $compile_state = $no_compiled_file;
+    my $IsCompiledFileExist = FALSE;
 
     # Start compiling
     foreach my $src_obj (@src_objFilePath)
@@ -227,10 +242,10 @@ sub CompileSources
             if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, \@dependList) == OBJ_IS_OUT_OF_DATE)
             {
                 # There are some source files modified. Let's compile.
-                $compile_state = $at_least_one_compiled_file;
-                if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == $COMPILE_ERROR)
+                $IsCompiledFileExist = TRUE;
+                if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
                 {
-                    $error_state = $at_least_one_compiling_error;
+                    $IsCompileError = TRUE;
                 }
             }
             else
@@ -243,28 +258,28 @@ sub CompileSources
         else
         {
             # Object file is not exists. Let's compile.
-            $compile_state = $at_least_one_compiled_file;
-            if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == $COMPILE_ERROR)
+            $IsCompiledFileExist = TRUE;
+            if(IssueCompileCommand($cCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
             {
-                $error_state = $at_least_one_compiling_error;
+                $IsCompileError = TRUE;
             }
         }
     }
 
-    if($compile_state == $no_compiled_file)
+    if($IsCompiledFileExist == TRUE)
     {
-        return $NO_COMPILED_FILE;
-    }
-    else
-    {
-        if($error_state == $no_compile_error)
+        if($IsCompileError == TRUE)
         {
-            return $NO_COMPILE_ERROR
+            return AT_LEAST_ONE_COMPILE_ERROR;
         }
         else
         {
-            return $AT_LEAST_ONE_COMPILE_ERROR
+            return NO_COMPILE_ERROR;
         }
+    }
+    else
+    {
+        return NO_COMPILED_FILE;
     }
 }
 
@@ -311,13 +326,14 @@ sub GetRelatedFileList
     return @fileList;
 }
 
-my $option = "";
-my $include = "";
 sub Makefile_Init()
 {
     @src_objFilePath = ();
 
     %TimeStampList = ();
+
+    $option = "";
+    $include = "";
 
     MakeObjectFilePathArray();
 
@@ -330,7 +346,7 @@ sub Makefile_make()
     CreateObjectFolder();
 
     my $compile_state = CompileSources($option, $include);
-    if($compile_state == $NO_COMPILED_FILE)
+    if($compile_state == NO_COMPILED_FILE)
     {
         if(-e './'.$targetName)
         {
@@ -341,11 +357,11 @@ sub Makefile_make()
             BuildTarget($option, $targetName);
         }
     }
-    elsif($compile_state == $NO_COMPILE_ERROR)
+    elsif($compile_state == NO_COMPILE_ERROR)
     {
         BuildTarget($option, $targetName);
     }
-    else # $compile_state = $AT_LEAST_ONE_COMPILE_ERROR
+    else # $compile_state = AT_LEAST_ONE_COMPILE_ERROR
     {
         printf("Skip linking, because at least one compile error happened.\n");
     }
