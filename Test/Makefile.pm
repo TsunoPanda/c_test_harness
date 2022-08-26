@@ -44,6 +44,7 @@ my $objPath = "./Obj";
 # This is array of hashes. The hashes will have source path (key:src) and object path (key:obj)
 my @src_objFilePath = ();
 
+my %TimeStampList = ();
 
 use constant FILE1_IS_NEW   => 0;
 use constant FILE2_IS_NEW   => 1;
@@ -66,8 +67,6 @@ sub GetTimeStampValueByCheckingFileSystem
 sub GetTimeStampValue
 {
     my ($file) = @_;
-
-    state %TimeStampList = ();
 
     if (exists($TimeStampList{$file}))
     {
@@ -316,6 +315,10 @@ my $option = "";
 my $include = "";
 sub Makefile_Init()
 {
+    @src_objFilePath = ();
+
+    %TimeStampList = ();
+
     MakeObjectFilePathArray();
 
     $option = OptionArrayToCommand(\@cOption);
