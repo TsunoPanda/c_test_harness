@@ -1,7 +1,11 @@
+package Makefile;
 use strict;
-use lib qw(./);
 use feature 'state';
-use Time::HiRes qw( usleep gettimeofday tv_interval );
+use lib qw(./);
+use Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(Makefile_Init Makefile_make Makefile_clear Makefile_rebuild);
+
 
 my $targetName = "TestProgram.exe";
 
@@ -359,13 +363,4 @@ sub Makefile_rebuild()
     Makefile_make();
 }
 
-my $t0 = [gettimeofday];
-
-Makefile_Init();
-Makefile_make();
-
-my $elapsed = tv_interval($t0);
-
-my $process_time = $elapsed*1000;
-printf("Process time = ".$process_time." ms");
-
+1;
