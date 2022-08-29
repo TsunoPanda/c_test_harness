@@ -6,10 +6,13 @@ use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(Makefile_Init Makefile_make Makefile_clear Makefile_rebuild);
 
+# The target executable file name
 my $gTargetName = "TestProgram.exe";
 
+# The compiler command
 my $gCompiler = "gcc";
 
+# Options to be used
 my @gaOptions = 
 (
     "-Wall",
@@ -17,6 +20,7 @@ my @gaOptions =
     "-MMD",
 );
 
+# The source files to be compiled
 my @gaSourceFiles =
 (
     "../ProductCode/LedDriver/LedDriver.c",
@@ -30,6 +34,7 @@ my @gaSourceFiles =
     "./TestRunner/test_main.c",
 );
 
+# The include paths
 my @gaIncludePaths =
 (
     "../ProductCode/LedDriver/",
@@ -38,165 +43,257 @@ my @gaIncludePaths =
     "./TestHarness/"
 );
 
+# The folder path where the object files are saved
 my $gObjPath = "./Obj";
 
-# This is array of hashes. The hashes will have source path (key:src) and object path (key:obj)
+# This is a n array where the hashes to be saved. The hashes has 'src', 'obj', 'dep' as keys and 
+# the respective values are 'source file path', 'object file path', 'dependency file path'
+# for all sources files to be compiled.
 our @gaAllRelevantFiles   = ();
+
+# This hash will have the file paths as keys, and the value will be the time stamp value of the file.
+# That is, the time stamp value of the file will be saved in this hash not to call system
+# function every time to check the time stamp value.
 our %ghSavedTimeStampList = ();
+
+# Option arguments in the compiling command. This will be generated from the '@gaOptions'.
 our $gOptionString        = "";
+
+# Include arguments in the compiling command. This will be generated from the '@gaIncludePaths'.
 our $gIncludeString       = "";
 
+###############################################
+####### Definitions of Constant values ########
+###############################################
+# Generic used value. false and true
 use constant FALSE => 0;
 use constant TRUE  => 1;
 
-use constant FILE1_IS_NEW   => 0;
-use constant FILE2_IS_NEW   => 1;
+# Return value of 'CompareFileTimestamps'
+use constant FILE1_IS_NEWER   => 0;
+use constant FILE2_IS_NEWER   => 1;
 use constant SAME_TIMESTAMP => 2;
 
-use constant OBJ_IS_OUT_OF_DATE => 0;
-use constant OBJ_IS_UP_TO_DATE  => 1;
-
+# Return value of 'IssueCompileCommand'
 use constant COMPILE_SUCCEEDED => 0;
 use constant COMPILE_ERROR     => 1;
 
+# Return value of 'CompileSources'
 use constant NO_COMPILED_FILE           => 0;
 use constant NO_COMPILE_ERROR           => 1;
 use constant AT_LEAST_ONE_COMPILE_ERROR => 2;
 
+# This function returns comparable time stamp value of the input file.
 sub GetTimeStampValueByCheckingFileSystem
 {
+    # $file: The input file path
     my ($file) = @_;
 
+    # Get the status of the file
     my @filestat = stat $file;
 
-    my $file_time = $filestat[9];
+    # Get the last modified time of the file
+    use constant LAST_MODIFIED_TIME => 9;
+    my $file_time = $filestat[LAST_MODIFIED_TIME];
 
+    # Return the value
     return $file_time;
 }
 
+# This function returns the time stamp value of the input file.
+# If the '%ghSavedTimeStampList' has the time stamp value of the input file,
+# it returns from the hash. Unless, it will check the system file stamp value.
 sub GetTimeStampValue
 {
+    # $file: The input file path
     my ($file) = @_;
 
+    # Has the time stamp value of the file been stored?
     if (exists($ghSavedTimeStampList{$file}))
     {
-        # get the value from the hash.
+        # Return the value from the hash.
         return $ghSavedTimeStampList{$file};
     }
     else
     {
+        # Get the value from the system
         my $file_time = GetTimeStampValueByCheckingFileSystem($file);
 
-        # save the file time
+        # Save the file time to the hash.
         $ghSavedTimeStampList{$file} = $file_time;
 
+        # Return the value
         return $file_time;
     }
 }
 
+# This function compares the time stamps of the input files.
+# Returns 'FILE1_IS_NEW', if the time stamp value of the file in the first input is larger.
+# Returns 'FILE2_IS_NEW', if the time stamp value of the file in the second input is larger.
+# Returns 'SAME_TIMESTAMP', if the time stamp value of the two files are the same.
 sub CompareFileTimestamps
 {
+    # $file1: The input file path of the first input
+    # $file2: The input file path of the second input
     my ($file1, $file2) = @_;
 
+    # Get the time stamp value of the first input file.
     my $timestameValue1 = GetTimeStampValue($file1);
 
+    # Get the time stamp value of the second input file.
     my $timestameValue2 = GetTimeStampValue($file2);
 
+    # If the time stamp value of the second input file is larger...
     if ($timestameValue1 < $timestameValue2)
     {
-        return FILE2_IS_NEW;
+        # The second input file is newer.
+        return FILE2_IS_NEWER;
     }
+    # If the time stamp value of the first input file is larger...
     elsif ($timestameValue1 > $timestameValue2)
     {
-        return FILE1_IS_NEW;
+        # The first input file is newer.
+        return FILE1_IS_NEWER;
     }
     else
     {
+        # Else, they have the same time stamp value.
         return SAME_TIMESTAMP;
     }
 }
 
+# This function converts the array of the options into the string which can be used in the command.
+# e.g. ["-Wall", "-O2", "-MMD"] -> "-Wall -O2 -MMD"
 sub OptionArrayToCommand
 {
-    my ($ref_optionArray) = @_;
+    # $aOptionArray_ref: Reference to the array of the options.
+    my ($aOptionArray_ref) = @_;
 
-    my $cFlag = "";
+    # Define/initialize the option string to be returned
+    my $optionStr = "";
 
-    foreach my $i_cFlag (@{$ref_optionArray})
+    # Make the option string by appending all the options in the array
+    foreach my $iOptionStr (@{$aOptionArray_ref})
     {
-        $cFlag = $cFlag.$i_cFlag." ";
+        # Append an option into the option string
+        $optionStr = $optionStr.$iOptionStr." ";
     }
 
-    chop($cFlag);
+    # Chop the last space
+    chop($optionStr);
 
-    return $cFlag;
+    # Return the option string
+    return $optionStr;
 }
 
+# This function converts the array of the include paths into the string which can be used in the command.
+# e.g. ["../ProductCode/SetAndGet/", "./TestHarness/"] -> "-I ../ProductCode/SetAndGet/ -I ./TestHarness/"
 sub IncludePathArrayToCommand
 {
-    my ($ref_optionArray) = @_;
+    # $aIncludePath_ref: Reference to the array of the include paths
+    my ($aIncludePath_ref) = @_;
 
+    # Define/initialize the array which will have include options as members.
+    # e.g ["-I ../ProductCode/SetAndGet/", "-I ./TestHarness/"]
     my @includeOptions = ();
 
-    foreach my $i_inPath (@{$ref_optionArray})
+    # Make the include option array from the include path array.
+    # e.g. ["../ProductCode/SetAndGet/", "./TestHarness/"] -> ["-I ../ProductCode/SetAndGet/", "-I ./TestHarness/"]
+    foreach my $i_inPath (@{$aIncludePath_ref})
     {
+        # Pushing an include path with adding '-I ' at the top of the path.
         push(@includeOptions, "-I ".$i_inPath);
     }
 
+    # Get the option string by inputting the option array to 'OptionArrayToCommand', and return the result.
     return OptionArrayToCommand(\@includeOptions);
 }
 
-sub MakeObjectFilePathArray()
+# This function makes the global array 'gaAllRelevantFiles' which has all relevant file paths
+# in accordance with the global variables '@gaSourceFiles' and '$gObjPath'.
+sub MakeAllRelevantFileHash()
 {
-    # Make Object file paths
+    # Make all the relevant file array for each source file
     foreach my $i_cFile (@gaSourceFiles)
     {
+        # Check if the source file has a good format.
+        # (TODO: Now it allows only .c file. .cpp files should be considered in the future.)
         if ($i_cFile =~ /.*(\/.+)\.c/)
         {
-            my $src_obj = {'src' => "", 'obj' => "", 'dep' => ""};
-            $src_obj->{'src'} = $i_cFile;
-            $src_obj->{'obj'} = $gObjPath.$1.".o";
-            $src_obj->{'dep'} = $gObjPath.$1.".d";
-            push(@gaAllRelevantFiles, $src_obj);
+            # Initialize the anonymous relevant file hash.
+            my $hRlevantFile_ref = {'src' => "", 'obj' => "", 'dep' => ""};
+
+            # Set the source file path with the key 'src'
+            $hRlevantFile_ref->{'src'} = $i_cFile;
+
+            # Set the object file path with the key 'obj'
+            $hRlevantFile_ref->{'obj'} = $gObjPath.$1.".o";
+
+            # Set the dependency file path with the key 'dep'
+            $hRlevantFile_ref->{'dep'} = $gObjPath.$1.".d";
+
+            # Push the anonymous hash into the global array
+            push(@gaAllRelevantFiles, $hRlevantFile_ref);
         }
         else
         {
+            # The input .c source file has a bad format. Display the warning message.
             printf("Warning: The way to define the c file is not correct.\n");
             printf(">>> ".$i_cFile."\n");
         }
     }
 }
 
+# This function creates the folder where all object files to be generated will be saved.
 sub CreateObjectFolder
 {
+    # Save the object file path temporarily.
     my $objTmp = $gObjPath;
 
+    # Replace '/' into '\'. This is required for the window shell.
     $objTmp =~ s/\//\\/g;
 
+    # If NOT the object folder exists, then, make it.
     system("if not exist ".$objTmp." mkdir ".$objTmp);
 }
 
-sub IsObjFileLatest
+# This function checks if the first input file is the latest compared to 
+# the files in the list input as the second parameter.
+sub IsTheFileLatestComparedToTheFilesInTheArray
 {
-    my ($src, $obj, $dependList) = @_;
+    # $inFile: The file to be checked.
+    # $aFileList_ref: Reference to the array containing files to be compared.
+    my ($inFile, $aFileList_ref) = @_;
 
-    foreach my $dependFile (@{$dependList})
+    # Check the file with all files in the array
+    foreach my $fileCompared (@{$aFileList_ref})
     {
-        if(CompareFileTimestamps($dependFile, $obj) == FILE1_IS_NEW)
+        # If a file in the array is newer,
+        if(CompareFileTimestamps($inFile, $fileCompared) == FILE2_IS_NEWER)
         {
-            return OBJ_IS_OUT_OF_DATE;
+            # Return false
+            return FALSE;
         }
     }
 
-    return OBJ_IS_UP_TO_DATE;
+    # Reaching here means the checked file is the newest one.
+    return TRUE;
 }
 
+# This function issues the compiling command according to the input parameters.
+# This also displays the command and the output result.
+# If this function detected 'error' in the output message of the command, it returns 'COMPILE_ERROR'.
+# Unless, returns 'COMPILE_SUCCEEDED'.
 sub IssueCompileCommand
 {
-    my ($cCompiler, $optionStr, $includeStr, $src_obj) = @_;
+    # $cCompiler: Compiler command e.g. 'gcc'
+    # $optionStr: Option string e.g. '-Wall -O'
+    # $includeStr: Include string e.g. '-I ./hoge/'
+    # $hRelevantFile_ref: Reference to a hash which has source, object, dependency file path
+    my ($cCompiler, $optionStr, $includeStr, $hRelevantFile_ref) = @_;
 
     # Make compiling command
-    my $compile_cmd = $cCompiler." ".$optionStr." ".$includeStr." -c ".$src_obj->{src}." -o ".$src_obj->{obj};
+    my $compile_cmd = $cCompiler." ".$optionStr." ".$includeStr." -c ".$hRelevantFile_ref->{src}." -o ".$hRelevantFile_ref->{obj};
 
     # Adding '2>&1' means send stderr(2) to the same place as stdout (&1))
     $compile_cmd = $compile_cmd.' 2>&1';
@@ -210,166 +307,253 @@ sub IssueCompileCommand
     # Display the result.
     printf($output);
 
+    # Check if the result text contain 'error'
     if($output =~ /error/)
     {
+        # Error message detected.
         return COMPILE_ERROR;
     }
     else
     {
+        # No error message detected.
         return COMPILE_SUCCEEDED;
     }
 }
 
+# This function check if the input file needs to be compiled or it does not.
+# Return TRUE: If input file needs to be compiled.
+# Return FALSE: If input file dose not need to be compiled.
+sub DoesTheFileNeedToBeCompiled
+{
+    # $hRelevantFile_ref: Reference to a hash which has source, object, dependency file path
+    my ($hRelevantFile_ref) = @_;
+
+    # Get the object file path from the hash
+    my $objectFile     = $hRelevantFile_ref->{obj};
+
+    # Get the dependency file path from the hash
+    my $dependancyFile = $hRelevantFile_ref->{dep};
+
+    # Are both the object/dependency files exist?
+    if (-e $objectFile && -e $dependancyFile)
+    {
+        # Get the array which contains all the relational files to the source file.
+        my @aRelatedFileList = GetRelatedFileList($dependancyFile);
+
+        # Is the object files newest compared to all the relative files?
+        if(IsTheFileLatestComparedToTheFilesInTheArray($objectFile, \@aRelatedFileList) == TRUE)
+        {
+            # Yes, the object file is up-to-date, skip the compiling.
+            return FALSE;
+        }
+        else
+        {
+            # One of the relative file is updated. Compile the source file.
+            return TRUE;
+        }
+    }
+    else
+    {
+        # One of the object/dependency files does not exist.
+        # Then, compile the file.
+        return TRUE;
+    }
+}
+
+# This function compile all the source files listed in the global array 'gaAllRelevantFiles'.
+# If the object file is already exist and it is the latest, this skips the compilation.
+# Returns NO_COMPILE_ERROR: If compilation finished without error.
+# Returns AT_LEAST_ONE_COMPILE_ERROR: If at least one file finished with an error.
+# Returns NO_COMPILED_FILE: If no file has been compiled.
 sub CompileSources
 {
+    # $optionStr: Option string e.g. '-Wall -O'
+    # $includeStr: Include string e.g. '-I ./hoge/'
     my ($optionStr, $includeStr) = @_;
-    
-    my $IsCompileError = FALSE;
 
+    # Initialize the compile error indicator.
+    # This value will be TRUE if at least one compile error happened.
+    my $IsCompileErrorExist = FALSE;
+
+    # Initialize the file compile indicator.
+    # This value will be TRUE if at least one file was compiled.
     my $IsCompiledFileExist = FALSE;
 
-    # Start compiling
-    foreach my $src_obj (@gaAllRelevantFiles)
+    # Start compiling for all source files in the array
+    foreach my $hRelativeFiles_ref (@gaAllRelevantFiles)
     {
-        #$src_obj->{obj} and $src_obj->{dep} exist?
-        if (-e $src_obj->{obj} && -e $src_obj->{dep})
+        # Check if the source file needs to be compiled
+        if(DoesTheFileNeedToBeCompiled($hRelativeFiles_ref) == TRUE)
         {
-            my @dependList = GetRelatedFileList($src_obj->{dep});
+            # The file need to be compiled
 
-            if(IsObjFileLatest($src_obj->{src}, $src_obj->{obj}, \@dependList) == OBJ_IS_OUT_OF_DATE)
+            # Set the compile indicator 'TRUE'
+            $IsCompiledFileExist = TRUE;
+
+            # Issue the compile command and check if it outputs error.
+            if(IssueCompileCommand($gCompiler, $optionStr, $includeStr, $hRelativeFiles_ref) == COMPILE_ERROR)
             {
-                # There are some source files modified. Let's compile.
-                $IsCompiledFileExist = TRUE;
-                if(IssueCompileCommand($gCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
-                {
-                    $IsCompileError = TRUE;
-                }
-            }
-            else
-            {
-                # Source file is not updated. skip.
-                printf("skip compiling ".$src_obj->{obj}."\n");
-                next;
+                # Error detected, set the error indicator 'TRUE'
+                $IsCompileErrorExist = TRUE;
             }
         }
         else
         {
-            # Object file is not exists. Let's compile.
-            $IsCompiledFileExist = TRUE;
-            if(IssueCompileCommand($gCompiler, $optionStr, $includeStr, $src_obj) == COMPILE_ERROR)
-            {
-                $IsCompileError = TRUE;
-            }
+            # The source file does not need to be compiled. skip.
+            printf("skip compiling ".$hRelativeFiles_ref->{obj}."\n");
         }
     }
 
+    # Check the Compiling result
+    # Compiled file exist?
     if($IsCompiledFileExist == TRUE)
     {
-        if($IsCompileError == TRUE)
+        # Error exists?
+        if($IsCompileErrorExist == TRUE)
         {
+            # Error has happened
             return AT_LEAST_ONE_COMPILE_ERROR;
         }
         else
         {
+            # Some files are compiled without any errors
             return NO_COMPILE_ERROR;
         }
     }
     else
     {
+        # No files has been compiled.
         return NO_COMPILED_FILE;
     }
 }
 
-sub BuildTarget
+# This function links all the object files listed in the global array 'gaAllRelevantFiles'.
+# And generates target executable file.
+sub LinkObjects
 {
+    # $optionStr: Option string e.g. '-Wall -O'
+    # $includeStr: Include string e.g. '-I ./hoge/'
     my ($optionStr, $targetStr) = @_;
 
+    # Define/initialize the string which will contain all object file to be linked.
     my $objectsStr = "";
-    foreach my $src_obj (@gaAllRelevantFiles)
+
+    # Append all object files in the array
+    foreach my $hRelevantFile_ref (@gaAllRelevantFiles)
     {
-        $objectsStr = $objectsStr.$src_obj->{'obj'}." "
+        $objectsStr = $objectsStr.$hRelevantFile_ref->{'obj'}." "
     }
 
+    # Make the command
     my $cmd = $gCompiler." ".$optionStr." -o ".$targetStr." ".$objectsStr;
 
+    # Display the command
     printf($cmd."\n");
+
+    # Issue the command
     system($cmd);
 }
 
+# This function returns the array containing all relative files found in the input .d file
 sub GetRelatedFileList
 {
+    # $dFilePath: Dependency file path
     my ($dFilePath) = @_;
 
+    # Define/initialize the array of relative file found in the input .d file
     my @fileList = ();
 
-    # Open the target text file.
+    # Open the dependency file.
     open(InFile, "< ".$dFilePath) or die("Can't open the dependency file.");
 
     # Read the file line by line.
     while (my $line = <InFile>)
     {
-        # clean the line string
+        # Clean the line string
         $line =~ s/.+\://g; # Remove the object file
         $line =~ s/\\//g; # Remove '/'
         $line =~ s/^ //g; # Remove a space at the top.
 
-        # If the line contains '#include "xxxx"' ?
+        # Split the line into relevant files
         push(@fileList, split(/\s+/, $line));
     }
 
-    # Close the target text file.
+    # Close the dependency file.
     close(InFile);
 
+    # Return the array of the related files
     return @fileList;
 }
 
+# This function returns TRUE if the linking required. Returns FALSE if not.
+sub IsLinkingRequiered
+{
+    # $compileStates: Compile state should be return value of the 'CompileSources'
+    my ($compileStates) = @_;
+
+    # If NOT the executable exists,
+    unless(-e './'.$gTargetName)
+    {
+        # Linking is required anyway
+        return TRUE;
+    }
+
+    # If at least one source file was updated and compiled without error.
+    if($compileStates == NO_COMPILE_ERROR)
+    {
+        # Linking is required anyway.
+        return TRUE;
+    }
+    # If at least one error happened.
+    elsif($compileStates = AT_LEAST_ONE_COMPILE_ERROR)
+    {
+        # Skip linking due to the error
+        printf("Skip linking, because at least one compile error happened.\n");
+        return FALSE;
+    }
+    # If no compiled file exists
+    else # $compileStates == NO_COMPILED_FILE
+    {
+        # Skip linking because no updated source file
+        printf("Skip linking, because nothing has been updated.\n");
+        return FALSE;
+    }
+
+}
+
+# This function initialize all the global variables in this module
 sub Makefile_Init()
 {
     @gaAllRelevantFiles = ();
 
     %ghSavedTimeStampList = ();
 
-    $gOptionString = "";
-    $gIncludeString = "";
-
-    MakeObjectFilePathArray();
-
     $gOptionString = OptionArrayToCommand(\@gaOptions);
+
     $gIncludeString = IncludePathArrayToCommand(\@gaIncludePaths);
+
+    MakeAllRelevantFileHash();
+
 }
 
 sub Makefile_make()
 {
     CreateObjectFolder();
 
-    my $compile_state = CompileSources($gOptionString, $gIncludeString);
-    if($compile_state == NO_COMPILED_FILE)
+    my $compileState = CompileSources($gOptionString, $gIncludeString);
+
+    if(IsLinkingRequiered($compileState) == TRUE)
     {
-        if(-e './'.$gTargetName)
-        {
-            printf("Skip linking, because nothing has been updated.\n");
-        }
-        else
-        {
-            BuildTarget($gOptionString, $gTargetName);
-        }
-    }
-    elsif($compile_state == NO_COMPILE_ERROR)
-    {
-        BuildTarget($gOptionString, $gTargetName);
-    }
-    else # $compile_state = AT_LEAST_ONE_COMPILE_ERROR
-    {
-        printf("Skip linking, because at least one compile error happened.\n");
+        LinkObjects($gOptionString, $gTargetName);
     }
 }
 
 sub Makefile_clear()
 {
-    foreach my $hash_src_obj (@gaAllRelevantFiles)
+    foreach my $hRelevantFile_ref (@gaAllRelevantFiles)
     {
-        unlink $hash_src_obj->{obj};
-        unlink $hash_src_obj->{dep};
+        unlink $hRelevantFile_ref->{'obj'};
+        unlink $hRelevantFile_ref->{'dep'};
     }
     unlink $gTargetName;
 }
