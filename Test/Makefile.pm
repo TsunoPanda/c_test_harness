@@ -4,7 +4,7 @@ use feature 'state';
 use lib qw(./);
 use Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(Makefile_Init Makefile_make Makefile_clear Makefile_rebuild);
+our @EXPORT = qw(Makefile_Init Makefile_Make Makefile_Clear Makefile_Build);
 
 # This is an array where the hashes to be saved. The hashes has 'src', 'obj', 'dep' as keys and 
 # the respective values are 'source file path', 'object file path', 'dependency file path'
@@ -543,7 +543,7 @@ sub Makefile_Init
 # This function will make target object executable file. But only out-of-date source files are compiled.
 # That is, up-to-data files will be skipped to be compiled.
 # Linking is also skipped if all the object files are not updated.
-sub Makefile_make()
+sub Makefile_Make()
 {
     # If not exists, Create a folder where all object files will be stored.
     CreateObjectFolder($gObjPath);
@@ -561,7 +561,7 @@ sub Makefile_make()
 
 # This function removes all the object/dependency files in the object folder.
 # Removes the target executable file as well.
-sub Makefile_clear()
+sub Makefile_Clear()
 {
     # Remove all object files and dependency files in the object file
     foreach my $hRelevantFile_ref (@gaAllRelevantFiles)
@@ -578,13 +578,13 @@ sub Makefile_clear()
 }
 
 # This function will compile all source files in any cases
-sub Makefile_build()
+sub Makefile_Build()
 {
     # Removes all the object/dependency files in the object folder.
-    Makefile_clear();
+    Makefile_Clear();
 
     # Then, make
-    Makefile_make();
+    Makefile_Make();
 }
 
 1;
