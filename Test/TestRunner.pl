@@ -9,28 +9,24 @@ use Time::HiRes qw( usleep gettimeofday tv_interval );
 # The compiler command
 my $gCompiler = 'gcc';
 
-# Compiler options
+# Global compiler options
 my @gaOptions = (
     '-MMD',
 );
 
-# The source files to be compiled
+# Global source files to be compiled
 my @gaSourceFiles = (
     './TestHarness/unity.c',
     './TestHarness/unity_fixture.c',
     './TestHarness/unity_memory.c',
 );
 
-# The include paths
+# Global include paths
 my @gaIncludePaths = (
     './TestHarness/',
 );
 
-# The target executable file name
-my $gTargetName = '';
-
-# The folder path where the object files are saved
-my $gObjPath = '';
+### End of Global Configuration Parameters ###
 
 sub SaveLocakConfiguration
 {
@@ -79,9 +75,11 @@ unless(-d './TestCode/'.$TestModule)
 my $localConfigPath = './TestCode/'.$TestModule.'/MakeConfig.pl';
 SaveLocakConfiguration($localConfigPath);
 
-$gTargetName = $TestModule.'Test.exe';
+# The target executable file name
+my $gTargetName = $TestModule.'Test.exe';
 
-$gObjPath = './TestCode/'.$TestModule.'/Obj';
+# The folder path where the object files are saved
+my $gObjPath = './TestCode/'.$TestModule.'/Obj';
 
 Makefile_Init($gTargetName, $gCompiler, \@gaOptions, \@gaSourceFiles, \@gaIncludePaths, $gObjPath);
 
