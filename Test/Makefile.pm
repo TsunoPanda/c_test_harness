@@ -6,47 +6,7 @@ use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(Makefile_Init Makefile_make Makefile_clear Makefile_rebuild);
 
-# The target executable file name
-my $gTargetName = "TestProgram.exe";
-
-# The compiler command
-my $gCompiler = "gcc";
-
-# Options to be used
-my @gaOptions = 
-(
-    "-Wall",
-    "-O2",
-    "-MMD",
-);
-
-# The source files to be compiled
-my @gaSourceFiles =
-(
-    "../ProductCode/LedDriver/LedDriver.c",
-    "../ProductCode/MyMath/MyMath.c",
-    "../ProductCode/SetAndGet/SetAndGet.c",
-    "./TestCode/LedDriverTest.c",
-    "./TestHarness/unity.c",
-    "./TestHarness/unity_fixture.c",
-    "./TestHarness/unity_memory.c",
-    "./TestRunner/LedDriverTestRunner.c",
-    "./TestRunner/test_main.c",
-);
-
-# The include paths
-my @gaIncludePaths =
-(
-    "../ProductCode/LedDriver/",
-    "../ProductCode/MyMath/",
-    "../ProductCode/SetAndGet/",
-    "./TestHarness/"
-);
-
-# The folder path where the object files are saved
-my $gObjPath = "./Obj";
-
-# This is a n array where the hashes to be saved. The hashes has 'src', 'obj', 'dep' as keys and 
+# This is an array where the hashes to be saved. The hashes has 'src', 'obj', 'dep' as keys and 
 # the respective values are 'source file path', 'object file path', 'dependency file path'
 # for all sources files to be compiled.
 our @gaAllRelevantFiles   = ();
@@ -61,6 +21,15 @@ our $gOptionString        = "";
 
 # Include arguments in the compiling command. This will be generated from the '@gaIncludePaths'.
 our $gIncludeString       = "";
+
+# Compiler to be used
+our $gCompiler = "";
+
+# Target executable file path
+our $gTargetPath = "";
+
+# Path to a folder where all object files are stored
+our $gObjPath = "";
 
 ###############################################
 ####### Definitions of Constant values ########
@@ -211,10 +180,17 @@ sub IncludePathArrayToCommand
 
 # This function makes the global array 'gaAllRelevantFiles' which has all relevant file paths
 # in accordance with the global variables '@gaSourceFiles' and '$gObjPath'.
-sub MakeAllRelevantFileHash()
+sub MakeAllRelevantFileHash
 {
+    # $aSourceFiles_ref: Reference to the array which all the source files
+    # $objPath: # Path to a folder where all object files are stored
+    my ($aSourceFiles_ref, $objPath) = @_;
+
+    # Create an anonymous array for all relevant files
+    my $aAllRelevantFiles_ref = [];
+
     # Make all the relevant file array for each source file
-    foreach my $i_cFile (@gaSourceFiles)
+    foreach my $i_cFile (@{$aSourceFiles_ref})
     {
         # Check if the source file has a good format.
         # (TODO: Now it allows only .c file. .cpp files should be considered in the future.)
@@ -227,13 +203,13 @@ sub MakeAllRelevantFileHash()
             $hRlevantFile_ref->{'src'} = $i_cFile;
 
             # Set the object file path with the key 'obj'
-            $hRlevantFile_ref->{'obj'} = $gObjPath.$1.".o";
+            $hRlevantFile_ref->{'obj'} = $objPath.$1.".o";
 
             # Set the dependency file path with the key 'dep'
-            $hRlevantFile_ref->{'dep'} = $gObjPath.$1.".d";
+            $hRlevantFile_ref->{'dep'} = $objPath.$1.".d";
 
             # Push the anonymous hash into the global array
-            push(@gaAllRelevantFiles, $hRlevantFile_ref);
+            push(@{$aAllRelevantFiles_ref}, $hRlevantFile_ref);
         }
         else
         {
@@ -242,13 +218,18 @@ sub MakeAllRelevantFileHash()
             printf(">>> ".$i_cFile."\n");
         }
     }
+
+    return @{$aAllRelevantFiles_ref};
 }
 
 # This function creates the folder where all object files to be generated will be saved.
 sub CreateObjectFolder
 {
+    # $objPath: Path to a folder where all object files are stored
+    my ($objPath) = @_;
+
     # Save the object file path temporarily.
-    my $objTmp = $gObjPath;
+    my $objTmp = $objPath;
 
     # Replace '/' into '\'. This is required for the window shell.
     $objTmp =~ s/\//\\/g;
@@ -367,9 +348,11 @@ sub DoesTheFileNeedToBeCompiled
 # Returns NO_COMPILED_FILE: If no file has been compiled.
 sub CompileSources
 {
+    # $compiler: Compiler command e.g. 'gcc'
+    # $aAllRelevantFiles_ref: Reference to the array which will contains all source, object, dependency file paths.
     # $optionStr: Option string e.g. '-Wall -O'
     # $includeStr: Include string e.g. '-I ./hoge/'
-    my ($optionStr, $includeStr) = @_;
+    my ($compiler, $aAllRelevantFiles_ref, $optionStr, $includeStr) = @_;
 
     # Initialize the compile error indicator.
     # This value will be TRUE if at least one compile error happened.
@@ -380,7 +363,7 @@ sub CompileSources
     my $IsCompiledFileExist = FALSE;
 
     # Start compiling for all source files in the array
-    foreach my $hRelativeFiles_ref (@gaAllRelevantFiles)
+    foreach my $hRelativeFiles_ref (@{$aAllRelevantFiles_ref})
     {
         # Check if the source file needs to be compiled
         if(DoesTheFileNeedToBeCompiled($hRelativeFiles_ref) == TRUE)
@@ -391,7 +374,7 @@ sub CompileSources
             $IsCompiledFileExist = TRUE;
 
             # Issue the compile command and check if it outputs error.
-            if(IssueCompileCommand($gCompiler, $optionStr, $includeStr, $hRelativeFiles_ref) == COMPILE_ERROR)
+            if(IssueCompileCommand($compiler, $optionStr, $includeStr, $hRelativeFiles_ref) == COMPILE_ERROR)
             {
                 # Error detected, set the error indicator 'TRUE'
                 $IsCompileErrorExist = TRUE;
@@ -431,21 +414,23 @@ sub CompileSources
 # And generates target executable file.
 sub LinkObjects
 {
+    # $compiler: Compiler command e.g. 'gcc'
+    # $aAllRelevantFiles_ref: Reference to the array which will contains all source, object, dependency file paths.
     # $optionStr: Option string e.g. '-Wall -O'
     # $includeStr: Include string e.g. '-I ./hoge/'
-    my ($optionStr, $targetStr) = @_;
+    my ($compiler, $gaAllRelevantFiles, $optionStr, $targetStr) = @_;
 
     # Define/initialize the string which will contain all object file to be linked.
     my $objectsStr = "";
 
     # Append all object files in the array
-    foreach my $hRelevantFile_ref (@gaAllRelevantFiles)
+    foreach my $hRelevantFile_ref (@{$gaAllRelevantFiles})
     {
         $objectsStr = $objectsStr.$hRelevantFile_ref->{'obj'}." "
     }
 
     # Make the command
-    my $cmd = $gCompiler." ".$optionStr." -o ".$targetStr." ".$objectsStr;
+    my $cmd = $compiler." ".$optionStr." -o ".$targetStr." ".$objectsStr;
 
     # Display the command
     printf($cmd."\n");
@@ -488,11 +473,12 @@ sub GetRelatedFileList
 # This function returns TRUE if the linking required. Returns FALSE if not.
 sub IsLinkingRequiered
 {
+    # $targetPath: Path to the target executable file
     # $compileStates: Compile state should be return value of the 'CompileSources'
-    my ($compileStates) = @_;
+    my ($targetPath, $compileStates) = @_;
 
     # If NOT the executable exists,
-    unless(-e './'.$gTargetName)
+    unless(-e './'.$targetPath)
     {
         # Linking is required anyway
         return TRUE;
@@ -505,7 +491,7 @@ sub IsLinkingRequiered
         return TRUE;
     }
     # If at least one error happened.
-    elsif($compileStates = AT_LEAST_ONE_COMPILE_ERROR)
+    elsif($compileStates == AT_LEAST_ONE_COMPILE_ERROR)
     {
         # Skip linking due to the error
         printf("Skip linking, because at least one compile error happened.\n");
@@ -521,46 +507,83 @@ sub IsLinkingRequiered
 
 }
 
-# This function initialize all the global variables in this module
-sub Makefile_Init()
+# This function initializes all global variables in this module
+sub Makefile_Init
 {
-    @gaAllRelevantFiles = ();
+    # $targetPath: Path to the target executable file
+    # $compiler: Compiler command e.g. 'gcc'
+    # $aOption_ref: Reference to the array of the options.
+    # $aSourceFiles_ref: Reference to the array which has paths to all the source files
+    # $objPath: Path to a folder where all object files are stored
+    my ($targetName, $compiler, $aOptions_ref, $aSourceFiles_ref, $aIncludePaths_ref, $objPath) = @_;
 
+    # Save the compiler command into a global variable
+    $gCompiler = $compiler;
+
+    # Save the object path into a global variable
+    $gObjPath = $objPath;
+
+    # Save the target file path into a global variable
+    $gTargetPath = $objPath.'/'.$targetName;
+
+    # Initialize an array which will contains all source, object, dependency file paths.
+    # For more explanation, see where this is defined.
+    @gaAllRelevantFiles = MakeAllRelevantFileHash($aSourceFiles_ref, $objPath);
+
+    # Initialize option arguments
+    $gOptionString = OptionArrayToCommand($aOptions_ref);
+
+    # Initialize include arguments
+    $gIncludeString = IncludePathArrayToCommand($aIncludePaths_ref);
+
+    # Initialize time stamp list. For more explanation, see where this is defined.
     %ghSavedTimeStampList = ();
-
-    $gOptionString = OptionArrayToCommand(\@gaOptions);
-
-    $gIncludeString = IncludePathArrayToCommand(\@gaIncludePaths);
-
-    MakeAllRelevantFileHash();
-
 }
 
+# This function will make target object executable file. But only out-of-date source files are compiled.
+# That is, up-to-data files will be skipped to be compiled.
+# Linking is also skipped if all the object files are not updated.
 sub Makefile_make()
 {
-    CreateObjectFolder();
+    # If not exists, Create a folder where all object files will be stored.
+    CreateObjectFolder($gObjPath);
 
-    my $compileState = CompileSources($gOptionString, $gIncludeString);
+    # Compile all the sources and get the status
+    my $compileState = CompileSources($gCompiler, \@gaAllRelevantFiles, $gOptionString, $gIncludeString);
 
-    if(IsLinkingRequiered($compileState) == TRUE)
+    # Check if linking is required
+    if(IsLinkingRequiered($gTargetPath, $compileState) == TRUE)
     {
-        LinkObjects($gOptionString, $gTargetName);
+        # If required, then link them
+        LinkObjects($gCompiler, \@gaAllRelevantFiles, $gOptionString, $gTargetPath);
     }
 }
 
+# This function removes all the object/dependency files in the object folder.
+# Removes the target executable file as well.
 sub Makefile_clear()
 {
+    # Remove all object files and dependency files in the object file
     foreach my $hRelevantFile_ref (@gaAllRelevantFiles)
     {
+        # Remove an object file
         unlink $hRelevantFile_ref->{'obj'};
+
+        # Remove an dependency file
         unlink $hRelevantFile_ref->{'dep'};
     }
-    unlink $gTargetName;
+
+    # Remove the target executable file
+    unlink $gTargetPath;
 }
 
-sub Makefile_rebuild()
+# This function will compile all source files in any cases
+sub Makefile_build()
 {
+    # Removes all the object/dependency files in the object folder.
     Makefile_clear();
+
+    # Then, make
     Makefile_make();
 }
 
