@@ -5,6 +5,7 @@ use lib qw(./);
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(Makefile_Init Makefile_Make Makefile_Clear Makefile_Build);
+our @EXPORT_OK = ('NO_COMPILED_FILE', 'NO_COMPILE_ERROR', 'AT_LEAST_ONE_COMPILE_ERROR');
 
 # This is an array where the hashes to be saved. The hashes has 'src', 'obj', 'dep' as keys and 
 # the respective values are 'source file path', 'object file path', 'dependency file path'
@@ -35,8 +36,8 @@ our $gObjPath = "";
 ####### Definitions of Constant values ########
 ###############################################
 # Generic used value. false and true
-use constant FALSE => 0;
-use constant TRUE  => 1;
+use constant FALSE => (1==0);
+use constant TRUE  => (0==0);
 
 # Return value of 'CompareFileTimestamps'
 use constant FILE1_IS_NEWER   => 0;
@@ -543,6 +544,7 @@ sub Makefile_Init
 # This function will make target object executable file. But only out-of-date source files are compiled.
 # That is, up-to-data files will be skipped to be compiled.
 # Linking is also skipped if all the object files are not updated.
+# Then return the compile state.
 sub Makefile_Make()
 {
     # If not exists, Create a folder where all object files will be stored.
@@ -557,6 +559,8 @@ sub Makefile_Make()
         # If required, then link them
         LinkObjects($gCompiler, \@gaAllRelevantFiles, $gOptionString, $gTargetPath);
     }
+
+    return($compileState)
 }
 
 # This function removes all the object/dependency files in the object folder.
@@ -577,14 +581,15 @@ sub Makefile_Clear()
     unlink $gTargetPath;
 }
 
-# This function will compile all source files in any cases
+# This function will compile all source files in any cases.
+# Then return the compile state.
 sub Makefile_Build()
 {
     # Removes all the object/dependency files in the object folder.
     Makefile_Clear();
 
     # Then, make
-    Makefile_Make();
+    return(Makefile_Make());
 }
 
 1;
