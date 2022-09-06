@@ -1,8 +1,7 @@
 use strict;
 use lib qw(./);
 use Makefile;
-use Makefile 'AT_LEAST_ONE_COMPILE_ERROR';
-use Makefile 'NO_COMPILED_FILE';
+use Makefile 'EXECUTABLE_VALID';
 
 use Time::HiRes qw( usleep gettimeofday tv_interval );
 
@@ -172,7 +171,7 @@ sub CheckInputRunType
 sub ExecMakeFileProcess
 {
     # Result of 'Make' or 'Build'
-    my $compileState = NO_COMPILED_FILE;
+    my $isExeValid = FALSE;
 
     # The object files has been cleared?
     my $IsCleared;
@@ -182,7 +181,7 @@ sub ExecMakeFileProcess
     {
         # The run type is 'Make'
         # Call Make function and save the status
-        $compileState = Makefile_Make();
+        $isExeValid = (Makefile_Make() == EXECUTABLE_VALID);
 
         # The object is NOT cleared.
         $IsCleared = FALSE;
@@ -191,7 +190,7 @@ sub ExecMakeFileProcess
     {
         # The run type is 'Build'
         # Call Build function and save the status
-        $compileState = Makefile_Build();
+        $isExeValid = (Makefile_Build() == EXECUTABLE_VALID);
 
         # The object is NOT cleared.
         $IsCleared = FALSE;
@@ -206,11 +205,8 @@ sub ExecMakeFileProcess
         $IsCleared = TRUE;
     }
 
-    # If compile state is other than 'AT_LEAST_ONE_COMPILE_ERROR', then no compile error.
-    my $IsNoCompileError = ($compileState != AT_LEAST_ONE_COMPILE_ERROR);
-
     # Returns the status
-    return ($IsNoCompileError, $IsCleared);
+    return ($isExeValid, $IsCleared);
 }
 
 # This function executes the generate executable file
@@ -219,7 +215,7 @@ sub ExecuteTestWithMessage
 {
     # $IsNoCompileError: Compilation result
     # $IsCleared: Has object files cleared or not
-    my ($IsNoCompileError, $IsCleared) = @_;
+    my ($isExeValid, $IsCleared) = @_;
 
     # The object files cleared?
     if ($IsCleared)
@@ -231,7 +227,7 @@ sub ExecuteTestWithMessage
     {
         # object files has been not cleared.
         # Check the compilation finished without or with error.
-        if($IsNoCompileError)
+        if($isExeValid)
         {
             # The valid executable file is exists, then execute it!
             printf("\n***** Now execute the test code! *****\n\n");
@@ -240,7 +236,7 @@ sub ExecuteTestWithMessage
         else
         {
             # The Compilation finished with error. Just output message.
-            printf("\n***** Compile Error detected...  *****\n\n");
+            printf("\n***** Some Errors detected...  *****\n\n");
         }
     }
 }
@@ -258,9 +254,9 @@ sub main
 
     Makefile_Init($gTargetName, $gCompiler, \@gaOptions, \@gaSourceFiles, \@gaIncludePaths, $gObjPath);
 
-    my ($IsNoCompileError, $IsCleared) = ExecMakeFileProcess();
+    my ($isExeValid, $IsCleared) = ExecMakeFileProcess();
 
-    ExecuteTestWithMessage($IsNoCompileError, $IsCleared);
+    ExecuteTestWithMessage($isExeValid, $IsCleared);
 
     return 0;
 }

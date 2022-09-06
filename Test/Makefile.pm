@@ -5,7 +5,7 @@ use lib qw(./);
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(Makefile_Init Makefile_Make Makefile_Clear Makefile_Build);
-our @EXPORT_OK = ('NO_COMPILED_FILE', 'NO_COMPILE_ERROR', 'AT_LEAST_ONE_COMPILE_ERROR');
+our @EXPORT_OK = ('EXECUTABLE_VALID', 'EXECUTABLE_INVALID');
 
 # This is an array where the hashes to be saved. The hashes has 'src', 'obj', 'dep' as keys and 
 # the respective values are 'source file path', 'object file path', 'dependency file path'
@@ -48,10 +48,19 @@ use constant SAME_TIMESTAMP => 2;
 use constant COMPILE_SUCCEEDED => 0;
 use constant COMPILE_ERROR     => 1;
 
+# Return value of 'LinkObjects'
+use constant LINK_SKIPPED   => 0;
+use constant LINK_SUCCEEDED => 1;
+use constant LINK_ERROR     => 2;
+
 # Return value of 'CompileSources'
 use constant NO_COMPILED_FILE           => 0;
 use constant NO_COMPILE_ERROR           => 1;
 use constant AT_LEAST_ONE_COMPILE_ERROR => 2;
+
+# Return value of 'Makefile_Make' and 'Makefile_Build'
+use constant EXECUTABLE_VALID => 0;
+use constant EXECUTABLE_INVALID => 1;
 
 # This function returns comparable time stamp value of the input file.
 sub GetTimeStampValueByCheckingFileSystem
@@ -366,8 +375,17 @@ sub CompileSources
     # Start compiling for all source files in the array
     foreach my $hRelativeFiles_ref (@{$aAllRelevantFiles_ref})
     {
+        # If the source file does NOT exists
+        if ((-e $hRelativeFiles_ref->{'src'}) == FALSE)
+        {
+            # The source file was not found
+            printf("Error: Could not find ".$hRelativeFiles_ref->{src}."\n");
+
+            # Error detected, set the error indicator 'TRUE'
+            $IsCompileErrorExist = TRUE;
+        }
         # Check if the source file needs to be compiled
-        if(DoesTheFileNeedToBeCompiled($hRelativeFiles_ref) == TRUE)
+        elsif(DoesTheFileNeedToBeCompiled($hRelativeFiles_ref) == TRUE)
         {
             # The file need to be compiled
 
@@ -389,20 +407,18 @@ sub CompileSources
     }
 
     # Check the Compiling result
+    # Error exists?
+    if($IsCompileErrorExist == TRUE)
+    {
+        # Error has happened
+        return AT_LEAST_ONE_COMPILE_ERROR;
+    }
+
     # Compiled file exist?
     if($IsCompiledFileExist == TRUE)
     {
-        # Error exists?
-        if($IsCompileErrorExist == TRUE)
-        {
-            # Error has happened
-            return AT_LEAST_ONE_COMPILE_ERROR;
-        }
-        else
-        {
-            # Some files are compiled without any errors
-            return NO_COMPILE_ERROR;
-        }
+        # Some files are compiled without any errors
+        return NO_COMPILE_ERROR;
     }
     else
     {
@@ -433,11 +449,29 @@ sub LinkObjects
     # Make the command
     my $cmd = $compiler." ".$optionStr." -o ".$targetStr." ".$objectsStr;
 
+    # Adding '2>&1' means send stderr(2) to the same place as stdout (&1))
+    $cmd = $cmd.' 2>&1';
+
     # Display the command
     printf($cmd."\n");
 
-    # Issue the command
-    system($cmd);
+    # Execute the command and get the STDOUT using 'qx//' syntax.
+    my $output = qx/$cmd/;
+
+    # Display the result.
+    printf($output);
+
+    # Check if the result text contain 'error'
+    if($output =~ /error/)
+    {
+        # Error message detected.
+        return LINK_ERROR;
+    }
+    else
+    {
+        # No error message detected.
+        return LINK_SUCCEEDED;
+    }
 }
 
 # This function returns the array containing all relative files found in the input .d file
@@ -478,13 +512,6 @@ sub IsLinkingRequiered
     # $compileStates: Compile state should be return value of the 'CompileSources'
     my ($targetPath, $compileStates) = @_;
 
-    # If NOT the executable exists,
-    unless(-e './'.$targetPath)
-    {
-        # Linking is required anyway
-        return TRUE;
-    }
-
     # If at least one source file was updated and compiled without error.
     if($compileStates == NO_COMPILE_ERROR)
     {
@@ -501,9 +528,19 @@ sub IsLinkingRequiered
     # If no compiled file exists
     else # $compileStates == NO_COMPILED_FILE
     {
-        # Skip linking because no updated source file
-        printf("Skip linking, because nothing has been updated.\n");
-        return FALSE;
+        # If the executable exists,
+        if(-e './'.$targetPath)
+        {
+            # Skip linking because no updated source file, and the executable exists.
+            printf("Skip linking, because nothing has been updated.\n");
+            return FALSE;
+        }
+        else
+        {
+            # No compiled file, but there isn't executable file,
+            # then linking is required.
+            return TRUE;
+        }
     }
 
 }
@@ -541,6 +578,32 @@ sub Makefile_Init
     %ghSavedTimeStampList = ();
 }
 
+# This function decides if there is valid executable generated as
+# seeing the compilation state and linking state.
+sub IsTheExecutableValid
+{
+    # $compileState: Previous Compilation state
+    # $linkState: Previous linking state
+    my ($compileState, $linkState) = @_;
+
+    # Check the compilation state
+    if ($compileState == AT_LEAST_ONE_COMPILE_ERROR)
+    {
+        # Compile failed, then no valid executable anyway
+        return(EXECUTABLE_INVALID);
+    }
+
+    # Check the linking state
+    if($linkState == LINK_ERROR)
+    {
+        # Linking failed, then no valid executable anyway
+        return(EXECUTABLE_INVALID);
+    }
+
+    # No error, then the execute file is valid
+    return(EXECUTABLE_VALID);
+}
+
 # This function will make target object executable file. But only out-of-date source files are compiled.
 # That is, up-to-data files will be skipped to be compiled.
 # Linking is also skipped if all the object files are not updated.
@@ -553,14 +616,20 @@ sub Makefile_Make()
     # Compile all the sources and get the status
     my $compileState = CompileSources($gCompiler, \@gaAllRelevantFiles, $gOptionString, $gIncludeString);
 
+    my $linkState;
+
     # Check if linking is required
     if(IsLinkingRequiered($gTargetPath, $compileState) == TRUE)
     {
         # If required, then link them
-        LinkObjects($gCompiler, \@gaAllRelevantFiles, $gOptionString, $gTargetPath);
+        $linkState = LinkObjects($gCompiler, \@gaAllRelevantFiles, $gOptionString, $gTargetPath);
+    }
+    else
+    {
+        $linkState = LINK_SKIPPED;
     }
 
-    return($compileState)
+    return(IsTheExecutableValid($compileState, $linkState));
 }
 
 # This function removes all the object/dependency files in the object folder.
