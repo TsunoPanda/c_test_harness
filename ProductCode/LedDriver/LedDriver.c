@@ -3,26 +3,26 @@
 #include "LedDriver.h"
 
 /* Led module を初期化 */
-void LedDriver_Init(stc_led_t* this, uint8_t* pLedOutputReg)
+void LedDriver_Init(stc_led_t* self, uint8_t* pLedOutputReg)
 {
-    this->pLedOutputReg = pLedOutputReg;
+    self->pLedOutputReg = pLedOutputReg;
 }
 
 /* Led をすべて点灯する */
-void LedDriver_LedAllOn(stc_led_t* this)
+void LedDriver_LedAllOn(stc_led_t* self)
 {
-    if(this->pLedOutputReg == NULL)
+    if(self->pLedOutputReg == NULL)
     {
         return;
     }
 
-    *(this->pLedOutputReg) = 0xFFu;
+    *(self->pLedOutputReg) = 0xFFu;
 }
 
 /* "ledIdx" により指定されたLED を点灯する */
-void LedDriver_LedOn(stc_led_t* this, int ledIdx)
+void LedDriver_LedOn(stc_led_t* self, int ledIdx)
 {
-    if(this->pLedOutputReg == NULL)
+    if(self->pLedOutputReg == NULL)
     {
         return;
     }
@@ -32,24 +32,24 @@ void LedDriver_LedOn(stc_led_t* this, int ledIdx)
         return;
     }
 
-    *(this->pLedOutputReg) |= (1u << ledIdx);
+    *(self->pLedOutputReg) |= (1u << ledIdx);
 }
 
 /* LEDをすべて消灯する */
-void LedDriver_LedAllOff(stc_led_t* this)
+void LedDriver_LedAllOff(stc_led_t* self)
 {
-    if(this->pLedOutputReg == NULL)
+    if(self->pLedOutputReg == NULL)
     {
         return;
     }
 
-    *(this->pLedOutputReg) = 0x0u;
+    *(self->pLedOutputReg) = 0x0u;
 }
 
 /* "ledIdx"により指定されたLEDを消灯する */
-void LedDriver_LedOff(stc_led_t* this, int ledIdx)
+void LedDriver_LedOff(stc_led_t* self, int ledIdx)
 {
-    if(this->pLedOutputReg == NULL)
+    if(self->pLedOutputReg == NULL)
     {
         return;
     }
@@ -59,7 +59,7 @@ void LedDriver_LedOff(stc_led_t* this, int ledIdx)
         return;
     }
 
-    *(this->pLedOutputReg) &= ~(1u << ledIdx);
+    *(self->pLedOutputReg) &= ~(1u << ledIdx);
 }
 
 
