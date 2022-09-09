@@ -9,27 +9,20 @@ use Time::HiRes qw( usleep gettimeofday tv_interval );
 ##### Global Configuration Parameters ######
 ############################################
 # The compiler command
-my $gCompiler = 'gcc';
+my $gCompiler = '';
 
 # Global compiler options
-my @gaOptions = (
-    '-MMD',
-);
+my @gaOptions = ();
 
 # Global source files to be compiled
-my @gaSourceFiles = (
-    './TestHarness/unity.c',
-    './TestHarness/unity_fixture.c',
-    './TestHarness/unity_memory.c',
-);
+my @gaSourceFiles = ();
 
 # Global include paths
-my @gaIncludePaths = (
-    './TestHarness/',
-);
+my @gaIncludePaths = ();
 
 use constant TEST_CODE_PATH => 'TestCode';
 use constant LOCAL_CONFIG_FILE => 'MakeConfig.pl';
+use constant GLOBAL_CONFIG_FILE => 'MakeConfig.pl';
 
 ### End of Global Configuration Parameters ###
 
@@ -105,6 +98,29 @@ sub CheckExistenceOfTheTestModule
     }
 }
 
+# This function reads global make configuration file, and 
+# saves them into global variables
+sub SaveGlobalConfiguration
+{
+    # $globalConfigPath: Path to the global make configuration file
+    my ($globalConfigPath) = @_;
+
+    # Fetch the local configuration
+    my %GlobalConfig = do $globalConfigPath;
+
+    # Save the compiler command
+    $gCompiler = $GlobalConfig{'Compiler'};
+
+    # Append local options to global configuration parameter
+    push(@gaOptions, @{$GlobalConfig{'Options'}});
+
+    # Append local source files to be compiled to global configuration parameter
+    push(@gaSourceFiles, @{$GlobalConfig{'SourceFiles'}});
+
+    # Append local include paths to global configuration parameter
+    push(@gaIncludePaths, @{$GlobalConfig{'IncludePaths'}});
+}
+
 # This function reads local make configuration file, and 
 # saves them into global variables
 sub SaveLocalConfiguration
@@ -123,6 +139,25 @@ sub SaveLocalConfiguration
 
     # Append local include paths to global configuration parameter
     push(@gaIncludePaths, @{$LocalConfig{'IncludePaths'}});
+}
+
+# This function checks if the local configuration file exists or not.
+# If exist, gets and saves the configuration.
+sub GetTheGlobalConfiguration
+{
+    # Make the global make configuration file path
+    my $globalConfigPath = './'.GLOBAL_CONFIG_FILE;
+
+    # The configuration file exist?
+    unless(-e $globalConfigPath)
+    {
+        # It did not exist.
+        printf("Could not find the ".LOCAL_CONFIG_FILE." in the same folder with this script.\n");
+        exit(1);
+    }
+
+    # Save the local configuration parameter
+    SaveGlobalConfiguration($globalConfigPath);
 }
 
 # This function checks if the local configuration file exists or not.
@@ -249,6 +284,8 @@ sub main
     CheckInputRunType();
 
     CheckExistenceOfTheTestModule();
+
+    GetTheGlobalConfiguration();
 
     GetTheLocalConfiguration();
 
