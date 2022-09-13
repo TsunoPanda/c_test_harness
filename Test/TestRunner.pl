@@ -12,6 +12,24 @@ use Time::HiRes qw( usleep gettimeofday tv_interval );
 # The compiler command
 my $gCompiler = '';
 
+# Compiler options for Test harness codes
+my @gaHarnessOptions = ();
+
+# Test Harness source files
+my @gaHarnessSrcFiles = ();
+
+# Compiler options for Test code
+my @gaTestCodeOptions = ();
+
+# Test code files
+my @gaTestSrcFiles = ();
+
+# Compiler options for Test code
+my @gaProductCodeOptions = ();
+
+# Product code files
+my @gaProductSrcFiles = ();
+
 # Global compiler options
 my @gaOptions = ();
 
@@ -21,8 +39,8 @@ my @gaSourceFiles = ();
 # Global include paths
 my @gaIncludePaths = ();
 
-use constant TEST_CODE_PATH => 'TestCode';
-use constant LOCAL_CONFIG_FILE => 'MakeConfig.pl';
+use constant TEST_CODE_PATH     => 'TestCode';
+use constant LOCAL_CONFIG_FILE  => 'MakeConfig.pl';
 use constant GLOBAL_CONFIG_FILE => 'MakeConfig.pl';
 
 ### End of Global Configuration Parameters ###
@@ -79,13 +97,19 @@ sub GetTheLocalConfigPath
     return($localConfigPath);
 }
 
-sub isTheConfigFilesUpToDate
+sub IsTheConfigFilesUpToDate
 {
     # Make the global make configuration file path
     my $globalConfigPath = GetGlobalConfigPath();
     my $localConfigPath = GetTheLocalConfigPath();
 
     my @objfiles = glob( $gObjPath . '/*' );
+
+    # No file found then false
+    if(@objfiles == 0)
+    {
+        return FALSE;
+    }
 
     if (TimeStampComp_IsTheFileLatest($globalConfigPath, \@objfiles) == TRUE)
     {
@@ -140,7 +164,7 @@ sub InitializeGlobalVariablesFromCommandLineArguments
 
     if ($RunType eq 'Make')
     {
-        if (isTheConfigFilesUpToDate() == TRUE)
+        if (IsTheConfigFilesUpToDate() == TRUE)
         {
             printf("!!! The make configure files are updated. Do Build.!!!\n");
             $RunType = 'Build';
@@ -175,10 +199,10 @@ sub SaveGlobalConfiguration
     $gCompiler = $GlobalConfig{'Compiler'};
 
     # Append local options to global configuration parameter
-    push(@gaOptions, @{$GlobalConfig{'Options'}});
+    push(@gaHarnessOptions, @{$GlobalConfig{'HarnessOptions'}});
 
     # Append local source files to be compiled to global configuration parameter
-    push(@gaSourceFiles, @{$GlobalConfig{'SourceFiles'}});
+    push(@gaHarnessSrcFiles, @{$GlobalConfig{'HarnessSourceFiles'}});
 
     # Append local include paths to global configuration parameter
     push(@gaIncludePaths, @{$GlobalConfig{'IncludePaths'}});
@@ -195,10 +219,16 @@ sub SaveLocalConfiguration
     my %LocalConfig = do $localConfigPath;
 
     # Append local options to global configuration parameter
-    push(@gaOptions, @{$LocalConfig{'Options'}});
+    push(@gaTestCodeOptions, @{$LocalConfig{'TestCodeOptions'}});
 
     # Append local source files to be compiled to global configuration parameter
-    push(@gaSourceFiles, @{$LocalConfig{'SourceFiles'}});
+    push(@gaTestSrcFiles, @{$LocalConfig{'TestSourceFiles'}});
+
+        # Append local options to global configuration parameter
+    push(@gaProductCodeOptions, @{$LocalConfig{'ProductCodeOptions'}});
+
+    # Append local source files to be compiled to global configuration parameter
+    push(@gaProductSrcFiles, @{$LocalConfig{'ProductSourceFiles'}});
 
     # Append local include paths to global configuration parameter
     push(@gaIncludePaths, @{$LocalConfig{'IncludePaths'}});
@@ -314,7 +344,13 @@ sub main
 
     SaveLocalConfiguration();
 
-    Makefile_Init($gTargetName, $gCompiler, \@gaOptions, \@gaSourceFiles, \@gaIncludePaths, $gObjPath);
+    Makefile_Init($gTargetName, $gCompiler, \@gaIncludePaths, $gObjPath);
+
+    Makefile_AddSrc(\@gaHarnessSrcFiles, \@gaHarnessOptions);
+
+    Makefile_AddSrc(\@gaTestSrcFiles, \@gaTestCodeOptions);
+
+    Makefile_AddSrc(\@gaProductSrcFiles, \@gaProductCodeOptions);
 
     my ($isExeValid, $IsCleared) = ExecMakeFileProcess();
 

@@ -1,13 +1,13 @@
 # Generic Compiler options
 Compiler => 'g++',
 
-Options    => [
-    '-MMD',
+HarnessOptions    => [
+    '-MMD',  # Make dependency file
     '-Wformat=0',
 ],
 
 # The source files to be compiled
-SourceFiles => [
+HarnessSourceFiles => [
     './TestHarness/src/CppUTest/CommandLineArguments.cpp',
     './TestHarness/src/CppUTest/CommandLineTestRunner.cpp',
     './TestHarness/src/CppUTest/JUnitTestOutput.cpp',
