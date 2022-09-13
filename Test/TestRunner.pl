@@ -2,6 +2,7 @@ use strict;
 use lib qw(./);
 use Makefile;
 use Makefile 'EXECUTABLE_VALID';
+use TimeStampComp;
 
 use Time::HiRes qw( usleep gettimeofday tv_interval );
 
@@ -45,6 +46,60 @@ our $gTargetName;
 use constant FALSE => (1==0);
 use constant TRUE  => (0==0);
 
+sub GetGlobalConfigPath
+{
+    # Make the global make configuration file path
+    my $globalConfigPath = './'.GLOBAL_CONFIG_FILE;
+
+    # The configuration file exist?
+    unless(-e $globalConfigPath)
+    {
+        # It did not exist.
+        printf("Could not find the ".LOCAL_CONFIG_FILE." in the same folder with this script.\n");
+        exit(1);
+    }
+
+    return($globalConfigPath);
+}
+
+sub GetTheLocalConfigPath
+{
+    # Make the local make configuration file path
+    my $localConfigPath = './'.TEST_CODE_PATH.'/'.$TestModule.'/'.LOCAL_CONFIG_FILE;
+
+    # The configuration file exist?
+    unless(-e $localConfigPath)
+    {
+        # It did not exist.
+        printf("Could not find the ".LOCAL_CONFIG_FILE." in the test module folder\n");
+        exit(1);
+    }
+
+    # Save the local configuration parameter
+    return($localConfigPath);
+}
+
+sub isTheConfigFilesUpToDate
+{
+    # Make the global make configuration file path
+    my $globalConfigPath = GetGlobalConfigPath();
+    my $localConfigPath = GetTheLocalConfigPath();
+
+    my @objfiles = glob( $gObjPath . '/*' );
+
+    if (TimeStampComp_IsTheFileLatest($globalConfigPath, \@objfiles) == TRUE)
+    {
+        return TRUE;
+    }
+
+    if (TimeStampComp_IsTheFileLatest($localConfigPath, \@objfiles) == TRUE)
+    {
+        return TRUE;
+    }
+
+     return FALSE;
+}
+
 # This function will get command line arguments,
 # and initializes global variables according to them
 sub InitializeGlobalVariablesFromCommandLineArguments
@@ -83,6 +138,14 @@ sub InitializeGlobalVariablesFromCommandLineArguments
     # Make folder path where the object files are saved
     $gObjPath = $testModuleFolder.'/Obj';
 
+    if ($RunType eq 'Make')
+    {
+        if (isTheConfigFilesUpToDate() == TRUE)
+        {
+            printf("!!! The make configure files are updated. Do Build.!!!\n");
+            $RunType = 'Build';
+        }
+    }
 }
 
 # This function checks if the test module folder exists,
@@ -102,8 +165,8 @@ sub CheckExistenceOfTheTestModule
 # saves them into global variables
 sub SaveGlobalConfiguration
 {
-    # $globalConfigPath: Path to the global make configuration file
-    my ($globalConfigPath) = @_;
+    # Path to the global make configuration file
+    my $globalConfigPath = GetGlobalConfigPath();
 
     # Fetch the local configuration
     my %GlobalConfig = do $globalConfigPath;
@@ -125,8 +188,8 @@ sub SaveGlobalConfiguration
 # saves them into global variables
 sub SaveLocalConfiguration
 {
-    # $localConfigPath: Path to the make configuration file of the test module
-    my ($localConfigPath) = @_;
+    # Path to the make configuration file of the test module
+    my $localConfigPath = GetTheLocalConfigPath();
 
     # Fetch the local configuration
     my %LocalConfig = do $localConfigPath;
@@ -139,44 +202,6 @@ sub SaveLocalConfiguration
 
     # Append local include paths to global configuration parameter
     push(@gaIncludePaths, @{$LocalConfig{'IncludePaths'}});
-}
-
-# This function checks if the local configuration file exists or not.
-# If exist, gets and saves the configuration.
-sub GetTheGlobalConfiguration
-{
-    # Make the global make configuration file path
-    my $globalConfigPath = './'.GLOBAL_CONFIG_FILE;
-
-    # The configuration file exist?
-    unless(-e $globalConfigPath)
-    {
-        # It did not exist.
-        printf("Could not find the ".LOCAL_CONFIG_FILE." in the same folder with this script.\n");
-        exit(1);
-    }
-
-    # Save the local configuration parameter
-    SaveGlobalConfiguration($globalConfigPath);
-}
-
-# This function checks if the local configuration file exists or not.
-# If exist, gets and saves the configuration.
-sub GetTheLocalConfiguration
-{
-    # Make the local make configuration file path
-    my $localConfigPath = './'.TEST_CODE_PATH.'/'.$TestModule.'/'.LOCAL_CONFIG_FILE;
-
-    # The configuration file exist?
-    unless(-e $localConfigPath)
-    {
-        # It did not exist.
-        printf("Could not find the ".LOCAL_CONFIG_FILE." in the test module folder\n");
-        exit(1);
-    }
-
-    # Save the local configuration parameter
-    SaveLocalConfiguration($localConfigPath);
 }
 
 # This function checks the validity of input run type.
@@ -285,9 +310,9 @@ sub main
 
     CheckExistenceOfTheTestModule();
 
-    GetTheGlobalConfiguration();
+    SaveGlobalConfiguration();
 
-    GetTheLocalConfiguration();
+    SaveLocalConfiguration();
 
     Makefile_Init($gTargetName, $gCompiler, \@gaOptions, \@gaSourceFiles, \@gaIncludePaths, $gObjPath);
 
