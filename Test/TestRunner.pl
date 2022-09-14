@@ -30,13 +30,10 @@ my @gaProductCodeOptions = ();
 # Product code files
 my @gaProductSrcFiles = ();
 
-# Global compiler options
-my @gaOptions = ();
+# Linker option
+my @gaLinkerOptions = ();
 
-# Global source files to be compiled
-my @gaSourceFiles = ();
-
-# Global include paths
+# Include paths
 my @gaIncludePaths = ();
 
 use constant TEST_CODE_PATH     => 'TestCode';
@@ -103,7 +100,7 @@ sub IsTheConfigFilesUpToDate
     my $globalConfigPath = GetGlobalConfigPath();
     my $localConfigPath = GetTheLocalConfigPath();
 
-    my @objfiles = glob( $gObjPath . '/*' );
+    my @objfiles = glob( $gObjPath . '/*.o' );
 
     # No file found then false
     if(@objfiles == 0)
@@ -232,6 +229,8 @@ sub SaveLocalConfiguration
 
     # Append local include paths to global configuration parameter
     push(@gaIncludePaths, @{$LocalConfig{'IncludePaths'}});
+
+    push(@gaLinkerOptions, @{$LocalConfig{'LinkerOption'}});
 }
 
 # This function checks the validity of input run type.
@@ -321,7 +320,7 @@ sub ExecuteTestWithMessage
         {
             # The valid executable file is exists, then execute it!
             printf("\n***** Now execute the test code! *****\n\n");
-            system($gObjPath.'/'.$gTargetName);
+            system($gObjPath.'/'.$gTargetName.' -c');
         }
         else
         {
@@ -344,7 +343,7 @@ sub main
 
     SaveLocalConfiguration();
 
-    Makefile_Init($gTargetName, $gCompiler, \@gaIncludePaths, $gObjPath);
+    Makefile_Init($gTargetName, $gCompiler, \@gaIncludePaths, \@gaLinkerOptions, $gObjPath);
 
     Makefile_AddSrc(\@gaHarnessSrcFiles, \@gaHarnessOptions);
 

@@ -3,6 +3,8 @@ ProductCodeOptions    => [
     '-MMD', # Make dependency file
     '-Wall',
     '-O2',
+    '-fprofile-arcs',
+    '-ftest-coverage',
 ],
 
 # The product source files to be compiled
@@ -21,6 +23,14 @@ TestCodeOptions    => [
 TestSourceFiles => [
     './TestCode/LedDriver/LedDriverTest.cpp',
     './TestCode/LedDriver/LedDriverTestRunner.cpp',
+],
+
+LinkerOption => [
+    '-MMD', # Make dependency file
+    '-Wall',
+    '-O2',
+    '-fprofile-arcs',
+    '-ftest-coverage',
 ],
 
 IncludePaths => [

@@ -16,7 +16,7 @@ our @EXPORT_OK = ('EXECUTABLE_VALID', 'EXECUTABLE_INVALID');
 our @gaAllRelevantFiles   = ();
 
 # Option arguments in the compiling command. This will be generated from the '@gaOptions'.
-our $gOptionString        = "";
+our $gLinkerOptionString        = "";
 
 # Include arguments in the compiling command. This will be generated from the '@gaIncludePaths'.
 our $gIncludeString       = "";
@@ -472,7 +472,7 @@ sub Makefile_Init
     # $targetPath: Path to the target executable file
     # $compiler: Compiler command e.g. 'gcc'
     # $objPath: Path to a folder where all object files are stored
-    my ($targetName, $compiler, $aIncludePaths_ref, $objPath) = @_;
+    my ($targetName, $compiler, $aIncludePaths_ref, $aLinkerOptions_ref, $objPath) = @_;
 
     # Save the compiler command into a global variable
     $gCompiler = $compiler;
@@ -485,6 +485,10 @@ sub Makefile_Init
 
     # Initialize include arguments
     $gIncludeString = IncludePathArrayToCommand($aIncludePaths_ref);
+
+    $gLinkerOptionString = OptionArrayToCommand($aLinkerOptions_ref);
+
+    @gaAllRelevantFiles = ();
 }
 
 sub Makefile_AddSrc
@@ -514,7 +518,7 @@ sub Makefile_Make()
     if(IsLinkingRequiered($gTargetPath, $compileState) == TRUE)
     {
         # If required, then link them
-        $linkState = LinkObjects($gCompiler, \@gaAllRelevantFiles, $gOptionString, $gTargetPath);
+        $linkState = LinkObjects($gCompiler, \@gaAllRelevantFiles, $gLinkerOptionString, $gTargetPath);
     }
     else
     {
