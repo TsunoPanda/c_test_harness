@@ -27,9 +27,6 @@ our $gCompiler = "";
 # Target executable file path
 our $gTargetPath = "";
 
-# Path to a folder where all object files are stored
-our $gObjPath = "";
-
 ###############################################
 ####### Definitions of Constant values ########
 ###############################################
@@ -104,7 +101,6 @@ sub IncludePathArrayToCommand
 }
 
 # This function makes the global array 'gaAllRelevantFiles' which has all relevant file paths
-# in accordance with the global variables '@gaSourceFiles' and '$gObjPath'.
 sub MakeAllRelevantFileHash
 {
     # $aSourceFiles_ref: Reference to the array which all the source files
@@ -118,8 +114,7 @@ sub MakeAllRelevantFileHash
     foreach my $i_cFile (@{$aSourceFiles_ref})
     {
         # Check if the source file has a good format.
-        # (TODO: Now it allows only .c file. .cpp files should be considered in the future.)
-        if ($i_cFile =~ /.*(\/.+)\.c/)
+        if ($i_cFile =~ /.*(\/.+)\.c(pp)?/)
         {
             # Initialize the anonymous relevant file hash.
             my $hRlevantFile_ref = {'src' => "", 'obj' => "", 'dep' => "", 'opt' => ""};
@@ -247,6 +242,18 @@ sub DoesTheFileNeedToBeCompiled
     }
 }
 
+sub GetDirectry
+{
+    my ($filePath) = @_;
+
+    if($filePath =~ /(.+)\/[^\/]*/)
+    {
+        return ($1);
+    }
+
+    return "";
+}
+
 # This function compile all the source files listed in the global array 'gaAllRelevantFiles'.
 # If the object file is already exist and it is the latest, this skips the compilation.
 # Returns NO_COMPILE_ERROR: If compilation finished without error.
@@ -283,6 +290,12 @@ sub CompileSources
         elsif(DoesTheFileNeedToBeCompiled($hRelativeFiles_ref) == TRUE)
         {
             # The file need to be compiled
+
+            # Capture object file folder path
+            my $objPath = GetDirectry($hRelativeFiles_ref->{'obj'});
+
+            # If not exists, Create a folder where all object files will be stored.
+            CreateObjectFolder($objPath);
 
             # Set the compile indicator 'TRUE'
             $IsCompiledFileExist = TRUE;
@@ -472,16 +485,13 @@ sub Makefile_Init
     # $targetPath: Path to the target executable file
     # $compiler: Compiler command e.g. 'gcc'
     # $objPath: Path to a folder where all object files are stored
-    my ($targetName, $compiler, $aIncludePaths_ref, $aLinkerOptions_ref, $objPath) = @_;
+    my ($targetPath, $compiler, $aIncludePaths_ref, $aLinkerOptions_ref) = @_;
 
     # Save the compiler command into a global variable
     $gCompiler = $compiler;
 
-    # Save the object path into a global variable
-    $gObjPath = $objPath;
-
     # Save the target file path into a global variable
-    $gTargetPath = $objPath.'/'.$targetName;
+    $gTargetPath = $targetPath;
 
     # Initialize include arguments
     $gIncludeString = IncludePathArrayToCommand($aIncludePaths_ref);
@@ -493,11 +503,11 @@ sub Makefile_Init
 
 sub Makefile_AddSrc
 {
-    my ($aSrcFilePath_ref, $aOption_ref) = @_;
+    my ($aSrcFilePath_ref, $aOption_ref, $objPath) = @_;
 
     # Initialize an array which will contains all source, object, dependency file paths.
     # For more explanation, see where this is defined.
-    push(@gaAllRelevantFiles, MakeAllRelevantFileHash($aSrcFilePath_ref, $aOption_ref, $gObjPath));
+    push(@gaAllRelevantFiles, MakeAllRelevantFileHash($aSrcFilePath_ref, $aOption_ref, $objPath));
 }
 
 # This function will make target object executable file. But only out-of-date source files are compiled.
@@ -506,9 +516,6 @@ sub Makefile_AddSrc
 # Then return the compile state.
 sub Makefile_Make()
 {
-    # If not exists, Create a folder where all object files will be stored.
-    CreateObjectFolder($gObjPath);
-
     # Compile all the sources and get the status
     my $compileState = CompileSources($gCompiler, \@gaAllRelevantFiles, $gIncludeString);
 
@@ -532,14 +539,19 @@ sub Makefile_Make()
 # Removes the target executable file as well.
 sub Makefile_Clear()
 {
-    # Get the list of all files in the object path
-    my @afiles = glob( $gObjPath . '/*' );
-
-    # Remove all files in the object directly
-    foreach my $file (@afiles)
+    foreach my $hAllRelevantFiles_ref (@gaAllRelevantFiles)
     {
-        # Remove a file
-        unlink $file;
+        my $objPath = GetDirectry($hAllRelevantFiles_ref->{'obj'});
+
+        # Get the list of all files in the object path
+        my @afiles = glob( $objPath . '/*' );
+
+        # Remove all files in the object directly
+        foreach my $file (@afiles)
+        {
+            # Remove a file
+            unlink $file;
+        }
     }
 }
 

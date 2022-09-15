@@ -36,9 +36,10 @@ my @gaLinkerOptions = ();
 # Include paths
 my @gaIncludePaths = ();
 
-use constant TEST_CODE_PATH     => 'TestCode';
-use constant LOCAL_CONFIG_FILE  => 'MakeConfig.pl';
-use constant GLOBAL_CONFIG_FILE => 'MakeConfig.pl';
+use constant TEST_CODE_PATH      => 'TestCode';
+use constant HARNESS_CODE_PATH   => 'TestHarness';
+use constant LOCAL_CONFIG_FILE   => 'MakeConfig.pl';
+use constant HARNESS_CONFIG_FILE => 'MakeConfig.pl';
 
 ### End of Global Configuration Parameters ###
 
@@ -52,38 +53,41 @@ our $RunType;
 our $testModuleFolder;
 
 # Folder where compilation result to be stored
-our $gObjPath;
+our $gTestObjPath;
+
+# Folder where compilation result of test harness code to be stored
+our $gHarnessObjPath;
 
 # The executable file name to be generated
-our $gTargetName;
+our $gTargetPath;
 
 # Generic used value. false and true
 use constant FALSE => (1==0);
 use constant TRUE  => (0==0);
 
-sub GetGlobalConfigPath
+sub GetHarnessConfigPath
 {
     # Make the global make configuration file path
-    my $globalConfigPath = './'.GLOBAL_CONFIG_FILE;
+    my $harnessConfigPath = './'.HARNESS_CODE_PATH.'/'.HARNESS_CONFIG_FILE;
 
     # The configuration file exist?
-    unless(-e $globalConfigPath)
+    unless(-e $harnessConfigPath)
     {
         # It did not exist.
         printf("Could not find the ".LOCAL_CONFIG_FILE." in the same folder with this script.\n");
         exit(1);
     }
 
-    return($globalConfigPath);
+    return($harnessConfigPath);
 }
 
-sub GetTheLocalConfigPath
+sub GetTheTestConfigPath
 {
     # Make the local make configuration file path
-    my $localConfigPath = './'.TEST_CODE_PATH.'/'.$TestModule.'/'.LOCAL_CONFIG_FILE;
+    my $testConfigPath = './'.TEST_CODE_PATH.'/'.$TestModule.'/'.LOCAL_CONFIG_FILE;
 
     # The configuration file exist?
-    unless(-e $localConfigPath)
+    unless(-e $testConfigPath)
     {
         # It did not exist.
         printf("Could not find the ".LOCAL_CONFIG_FILE." in the test module folder\n");
@@ -91,34 +95,44 @@ sub GetTheLocalConfigPath
     }
 
     # Save the local configuration parameter
-    return($localConfigPath);
+    return($testConfigPath);
 }
 
-sub IsTheConfigFilesUpToDate
+sub RemoveObjIfTheConfigFilesUpToDate
 {
+    # Make the local make configuration file path
+    my $testConfigPath = GetTheTestConfigPath();
+
+    my @testObjfiles = glob( $gTestObjPath . '/*.o' );
+
+    if(@testObjfiles != 0)
+    {
+        if (TimeStampComp_IsTheFileLatest($testConfigPath, \@testObjfiles) == TRUE)
+        {
+            printf("!!!Test configuration file was updated. Remove Local objects!!!\n");
+            for my $testObjfile (@testObjfiles)
+            {
+                unlink $testObjfile;
+            }
+        }
+    }
+
     # Make the global make configuration file path
-    my $globalConfigPath = GetGlobalConfigPath();
-    my $localConfigPath = GetTheLocalConfigPath();
+    my $harnessConfigPath = GetHarnessConfigPath();
 
-    my @objfiles = glob( $gObjPath . '/*.o' );
+    my @harnessObjfiles = glob( $gHarnessObjPath . '/*.o' );
 
-    # No file found then false
-    if(@objfiles == 0)
+    if(@harnessObjfiles != 0)
     {
-        return FALSE;
+        if (TimeStampComp_IsTheFileLatest($harnessConfigPath, \@harnessObjfiles) == TRUE)
+        {
+            printf("!!!Harness configuration file was updated. Remove Local objects!!!\n");
+            for my $harnessObjfile (@harnessObjfiles)
+            {
+                unlink $harnessObjfile;
+            }
+        }
     }
-
-    if (TimeStampComp_IsTheFileLatest($globalConfigPath, \@objfiles) == TRUE)
-    {
-        return TRUE;
-    }
-
-    if (TimeStampComp_IsTheFileLatest($localConfigPath, \@objfiles) == TRUE)
-    {
-        return TRUE;
-    }
-
-     return FALSE;
 }
 
 # This function will get command line arguments,
@@ -154,19 +168,12 @@ sub InitializeGlobalVariablesFromCommandLineArguments
     $testModuleFolder = './'.TEST_CODE_PATH.'/'.$TestModule;
 
     # Make target executable file name
-    $gTargetName = $TestModule.'Test.exe';
+    $gTargetPath = $testModuleFolder.'/Obj/'.$TestModule.'Test.exe';
 
     # Make folder path where the object files are saved
-    $gObjPath = $testModuleFolder.'/Obj';
+    $gTestObjPath = $testModuleFolder.'/Obj';
 
-    if ($RunType eq 'Make')
-    {
-        if (IsTheConfigFilesUpToDate() == TRUE)
-        {
-            printf("!!! The make configure files are updated. Do Build.!!!\n");
-            $RunType = 'Build';
-        }
-    }
+    $gHarnessObjPath = './'.HARNESS_CODE_PATH.'/Obj';
 }
 
 # This function checks if the test module folder exists,
@@ -184,53 +191,53 @@ sub CheckExistenceOfTheTestModule
 
 # This function reads global make configuration file, and 
 # saves them into global variables
-sub SaveGlobalConfiguration
+sub SaveHarnessConfiguration
 {
     # Path to the global make configuration file
-    my $globalConfigPath = GetGlobalConfigPath();
+    my $harnessConfigPath = GetHarnessConfigPath();
 
     # Fetch the local configuration
-    my %GlobalConfig = do $globalConfigPath;
+    my %HarnessConfig = do $harnessConfigPath;
 
     # Save the compiler command
-    $gCompiler = $GlobalConfig{'Compiler'};
+    $gCompiler = $HarnessConfig{'Compiler'};
 
     # Append local options to global configuration parameter
-    push(@gaHarnessOptions, @{$GlobalConfig{'HarnessOptions'}});
+    push(@gaHarnessOptions, @{$HarnessConfig{'HarnessOptions'}});
 
     # Append local source files to be compiled to global configuration parameter
-    push(@gaHarnessSrcFiles, @{$GlobalConfig{'HarnessSourceFiles'}});
+    push(@gaHarnessSrcFiles, @{$HarnessConfig{'HarnessSourceFiles'}});
 
     # Append local include paths to global configuration parameter
-    push(@gaIncludePaths, @{$GlobalConfig{'IncludePaths'}});
+    push(@gaIncludePaths, @{$HarnessConfig{'IncludePaths'}});
 }
 
 # This function reads local make configuration file, and 
 # saves them into global variables
-sub SaveLocalConfiguration
+sub SaveTestConfiguration
 {
     # Path to the make configuration file of the test module
-    my $localConfigPath = GetTheLocalConfigPath();
+    my $testConfigPath = GetTheTestConfigPath();
 
     # Fetch the local configuration
-    my %LocalConfig = do $localConfigPath;
+    my %testConfig = do $testConfigPath;
 
     # Append local options to global configuration parameter
-    push(@gaTestCodeOptions, @{$LocalConfig{'TestCodeOptions'}});
+    push(@gaTestCodeOptions, @{$testConfig{'TestCodeOptions'}});
 
     # Append local source files to be compiled to global configuration parameter
-    push(@gaTestSrcFiles, @{$LocalConfig{'TestSourceFiles'}});
+    push(@gaTestSrcFiles, @{$testConfig{'TestSourceFiles'}});
 
         # Append local options to global configuration parameter
-    push(@gaProductCodeOptions, @{$LocalConfig{'ProductCodeOptions'}});
+    push(@gaProductCodeOptions, @{$testConfig{'ProductCodeOptions'}});
 
     # Append local source files to be compiled to global configuration parameter
-    push(@gaProductSrcFiles, @{$LocalConfig{'ProductSourceFiles'}});
+    push(@gaProductSrcFiles, @{$testConfig{'ProductSourceFiles'}});
 
     # Append local include paths to global configuration parameter
-    push(@gaIncludePaths, @{$LocalConfig{'IncludePaths'}});
+    push(@gaIncludePaths, @{$testConfig{'IncludePaths'}});
 
-    push(@gaLinkerOptions, @{$LocalConfig{'LinkerOption'}});
+    push(@gaLinkerOptions, @{$testConfig{'LinkerOption'}});
 }
 
 # This function checks the validity of input run type.
@@ -320,7 +327,7 @@ sub ExecuteTestWithMessage
         {
             # The valid executable file is exists, then execute it!
             printf("\n***** Now execute the test code! *****\n\n");
-            system($gObjPath.'/'.$gTargetName.' -c');
+            system($gTargetPath);
         }
         else
         {
@@ -335,21 +342,24 @@ sub main
 {
     InitializeGlobalVariablesFromCommandLineArguments();
 
+    RemoveObjIfTheConfigFilesUpToDate();
+
     CheckInputRunType();
 
     CheckExistenceOfTheTestModule();
 
-    SaveGlobalConfiguration();
+    SaveHarnessConfiguration();
 
-    SaveLocalConfiguration();
+    SaveTestConfiguration();
 
-    Makefile_Init($gTargetName, $gCompiler, \@gaIncludePaths, \@gaLinkerOptions, $gObjPath);
+    # Make/Build/Clean Harness Codes
+    Makefile_Init($gTargetPath, $gCompiler, \@gaIncludePaths, \@gaLinkerOptions);
 
-    Makefile_AddSrc(\@gaHarnessSrcFiles, \@gaHarnessOptions);
+    Makefile_AddSrc(\@gaHarnessSrcFiles, \@gaHarnessOptions, $gHarnessObjPath);
 
-    Makefile_AddSrc(\@gaTestSrcFiles, \@gaTestCodeOptions);
+    Makefile_AddSrc(\@gaTestSrcFiles, \@gaTestCodeOptions, $gTestObjPath);
 
-    Makefile_AddSrc(\@gaProductSrcFiles, \@gaProductCodeOptions);
+    Makefile_AddSrc(\@gaProductSrcFiles, \@gaProductCodeOptions, $gTestObjPath);
 
     my ($isExeValid, $IsCleared) = ExecMakeFileProcess();
 
