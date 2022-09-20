@@ -2,7 +2,7 @@
 ProductCodeOptions    => [
     '-MMD', # Make dependency file
     '-Wall',
-    '-O2',
+    '-O0',  # No optimization for coverage measurement
     '-fprofile-arcs',
     '-ftest-coverage',
 ],
@@ -31,6 +31,7 @@ LinkerOption => [
     '-O2',
     '-fprofile-arcs',
     '-ftest-coverage',
+    '-pthread',
 ],
 
 IncludePaths => [

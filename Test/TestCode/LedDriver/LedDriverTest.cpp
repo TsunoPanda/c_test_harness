@@ -1,6 +1,7 @@
 #include "LedDriver.h"
 
 #include "CppUTest/TestHarness.h"
+#include "CppUTest/MemoryLeakDetectorMallocMacros.h"
 
 /*
     Virtual LED 出力レジスタ
@@ -28,7 +29,12 @@ TEST_GROUP(LedDriver)
 
 TEST(LedDriver, AllLedOn)
 {
-    LedDriver_LedAllOn(&testLedModule);
+    /* Memory leaking code to check the memory leak detection */
+    volatile uint8_t* a = (uint8_t*)malloc(100);
+    if(a != NULL)
+    {
+        LedDriver_LedAllOn(&testLedModule);
+    }
     BYTES_EQUAL(virtualLedReg, 0xFFu);
 }
 
