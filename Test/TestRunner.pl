@@ -403,7 +403,7 @@ sub ExecuteTestWithMessage
             # Execute the command and get the STDOUT using 'qx//' syntax.
             my $output = qx/$cmd/;
 
-            # Output the results
+            # Output the results to the log file
             my $TestMessageNumOfAstarisks = 90;
             my $TestMessage = $TestModule." Test Result";
             my $astarisks = '*' x $TestMessageNumOfAstarisks;
@@ -414,6 +414,10 @@ sub ExecuteTestWithMessage
             print $LOG_FILE $astarisks."\n\n";
             print $LOG_FILE $output;
             print $LOG_FILE $TestMessage." END\n\n\n";
+
+            # Output result to STDOUT
+            printf($output);
+
         }
         else
         {
@@ -430,7 +434,7 @@ sub main
 
     my $RunType = GetCommandLineArguments($aTestModule_ref);
 
-    open(my $LOG_FILE, "> filename.txt");
+    open(my $LOG_FILE, "> TestLog_".$ARGV[0].".txt");
 
     foreach my $TestModule (@{$aTestModule_ref})
     {
