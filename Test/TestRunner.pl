@@ -43,12 +43,6 @@ use constant HARNESS_CONFIG_FILE => 'MakeConfig.pl';
 
 ### End of Global Configuration Parameters ###
 
-# Test module name from the first command line argument
-our $TestModule;
-
-# Test run type from the second command line argument
-our $RunType;
-
 # Folder which has test codes, make configuration file to be executed
 our $testModuleFolder;
 
@@ -83,6 +77,8 @@ sub GetHarnessConfigPath
 
 sub GetTheTestConfigPath
 {
+    my ($TestModule) = @_;
+
     # Make the local make configuration file path
     my $testConfigPath = './'.TEST_CODE_PATH.'/'.$TestModule.'/'.LOCAL_CONFIG_FILE;
 
@@ -100,8 +96,10 @@ sub GetTheTestConfigPath
 
 sub RemoveObjIfTheConfigFilesUpToDate
 {
+    my ($TestModule) = @_;
+
     # Make the local make configuration file path
-    my $testConfigPath = GetTheTestConfigPath();
+    my $testConfigPath = GetTheTestConfigPath($TestModule);
 
     my @testObjfiles = glob( $gTestObjPath . '/*.o' );
 
@@ -135,10 +133,33 @@ sub RemoveObjIfTheConfigFilesUpToDate
     }
 }
 
-# This function will get command line arguments,
-# and initializes global variables according to them
-sub InitializeGlobalVariablesFromCommandLineArguments
+sub GetAllTestModules
 {
+    my ($TestModule, $aTestModule_ref) = @_;
+
+    @{$aTestModule_ref} = {};
+
+    if($TestModule eq 'All')
+    {
+        @{$aTestModule_ref} = grep {-d} glob(TEST_CODE_PATH."/*");
+
+        for(my $idx = 0; $idx < @{$aTestModule_ref}; $idx++)
+        {
+            $aTestModule_ref->[$idx] =~ s/.*\///;
+        }
+    }
+    else
+    {
+        push(@{$aTestModule_ref}, $TestModule);
+    }
+}
+
+sub GetCommandLineArguments
+{
+    my ($aTestModule_ref) = @_;
+    my $TestModule = '';
+    my $RunType = '';
+
     # Check the number of input command line arguments.
     if (@ARGV < 1)
     {
@@ -146,23 +167,60 @@ sub InitializeGlobalVariablesFromCommandLineArguments
         printf("Please input the test module as the first parameter.\n");
         exit(1);
     }
-    elsif(@ARGV <2)
-    {
-        # One arguments. Get test module name from the first parameter.
-        $TestModule = $ARGV[0];
-
-        # Assume the second parameter is 'Make'
-        $RunType    = 'Make';
-    }
     else
     {
         # Two arguments.
         # Get test module name from the first parameter.
         $TestModule = $ARGV[0];
+        GetAllTestModules($TestModule, $aTestModule_ref);
 
-        # Get run type from the second parameter.
-        $RunType    = $ARGV[1];
+        if (@ARGV < 2)
+        {
+            # Assume the second parameter is 'Make'
+            $RunType    = 'Make';
+        }
+        else
+        {
+            # Get run type from the second parameter.
+            $RunType    = $ARGV[1];
+        }
     }
+
+    return ($RunType);
+}
+
+# This function will get command line arguments,
+# and initializes yglobal variables according to them
+sub InitializeGlobalVariables
+{
+    my ($TestModule) = @_;
+
+    # The compiler command
+    $gCompiler = '';
+
+    # Compiler options for Test harness codes
+    @gaHarnessOptions = ();
+
+    # Test Harness source files
+    @gaHarnessSrcFiles = ();
+
+    # Compiler options for Test code
+    @gaTestCodeOptions = ();
+
+    # Test code files
+    @gaTestSrcFiles = ();
+
+    # Compiler options for Test code
+    @gaProductCodeOptions = ();
+
+    # Product code files
+    @gaProductSrcFiles = ();
+
+    # Linker option
+    @gaLinkerOptions = ();
+
+    # Include paths
+    @gaIncludePaths = ();
 
     # Make path of the test module
     $testModuleFolder = './'.TEST_CODE_PATH.'/'.$TestModule;
@@ -216,8 +274,10 @@ sub SaveHarnessConfiguration
 # saves them into global variables
 sub SaveTestConfiguration
 {
+    my ($TestModule) = @_;
+
     # Path to the make configuration file of the test module
-    my $testConfigPath = GetTheTestConfigPath();
+    my $testConfigPath = GetTheTestConfigPath($TestModule);
 
     # Fetch the local configuration
     my %testConfig = do $testConfigPath;
@@ -244,6 +304,8 @@ sub SaveTestConfiguration
 # If it is not valid, stops this program with error message.
 sub CheckInputRunType
 {
+    my ($RunType) = @_;
+
     # Is input run type valid?
     if(
         ($RunType eq 'Make')  or
@@ -266,6 +328,8 @@ sub CheckInputRunType
 # And return the compile state and clear state.
 sub ExecMakeFileProcess
 {
+    my ($RunType) = @_;
+
     # Result of 'Make' or 'Build'
     my $isExeValid = FALSE;
 
@@ -340,30 +404,37 @@ sub ExecuteTestWithMessage
 # main code
 sub main
 {
-    InitializeGlobalVariablesFromCommandLineArguments();
+    my $aTestModule_ref = [];
 
-    RemoveObjIfTheConfigFilesUpToDate();
+    my $RunType = GetCommandLineArguments($aTestModule_ref);
 
-    CheckInputRunType();
+    foreach my $TestModule (@{$aTestModule_ref})
+    {
+        InitializeGlobalVariables($TestModule);
 
-    CheckExistenceOfTheTestModule();
+        RemoveObjIfTheConfigFilesUpToDate($TestModule);
 
-    SaveHarnessConfiguration();
+        CheckInputRunType($RunType);
 
-    SaveTestConfiguration();
+        CheckExistenceOfTheTestModule();
 
-    # Make/Build/Clean Harness Codes
-    Makefile_Init($gTargetPath, $gCompiler, \@gaIncludePaths, \@gaLinkerOptions);
+        SaveHarnessConfiguration();
 
-    Makefile_AddSrc(\@gaHarnessSrcFiles, \@gaHarnessOptions, $gHarnessObjPath);
+        SaveTestConfiguration($TestModule);
 
-    Makefile_AddSrc(\@gaTestSrcFiles, \@gaTestCodeOptions, $gTestObjPath);
+        # Make/Build/Clean Harness Codes
+        Makefile_Init($gTargetPath, $gCompiler, \@gaIncludePaths, \@gaLinkerOptions);
 
-    Makefile_AddSrc(\@gaProductSrcFiles, \@gaProductCodeOptions, $gTestObjPath);
+        Makefile_AddSrc(\@gaHarnessSrcFiles, \@gaHarnessOptions, $gHarnessObjPath);
 
-    my ($isExeValid, $IsCleared) = ExecMakeFileProcess();
+        Makefile_AddSrc(\@gaTestSrcFiles, \@gaTestCodeOptions, $gTestObjPath);
 
-    ExecuteTestWithMessage($isExeValid, $IsCleared);
+        Makefile_AddSrc(\@gaProductSrcFiles, \@gaProductCodeOptions, $gTestObjPath);
+
+        my ($isExeValid, $IsCleared) = ExecMakeFileProcess($RunType);
+
+        ExecuteTestWithMessage($isExeValid, $IsCleared);
+    }
 
     return 0;
 }
