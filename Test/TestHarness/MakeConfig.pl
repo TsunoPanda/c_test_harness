@@ -4,6 +4,7 @@ Compiler => 'g++',
 HarnessOptions    => [
     '-MMD',  # Make dependency file
     '-Wformat=0',
+    '-Wno-deprecated-declarations',
 ],
 
 # The source files to be compiled

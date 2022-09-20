@@ -327,7 +327,7 @@ sub ExecuteTestWithMessage
         {
             # The valid executable file is exists, then execute it!
             printf("\n***** Now execute the test code! *****\n\n");
-            system($gTargetPath);
+            system($gTargetPath.' -v');
         }
         else
         {

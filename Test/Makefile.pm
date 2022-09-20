@@ -161,6 +161,26 @@ sub CreateObjectFolder
     system("if not exist ".$objTmp." mkdir ".$objTmp);
 }
 
+# This function detects error by checking the received message.
+sub ErrorInTheMessage
+{
+    # $msg: Message received
+    my ($msg) = @_;
+
+    # Check if the message contains "error"
+    # May need to improve
+    if($msg =~ /error/)
+    {
+        # Error detected
+        return TRUE;
+    }
+    else
+    {
+        # No error detected
+        return FALSE;
+    }
+}
+
 # This function issues the compiling command according to the input parameters.
 # This also displays the command and the output result.
 # If this function detected 'error' in the output message of the command, it returns 'COMPILE_ERROR'.
@@ -190,7 +210,7 @@ sub IssueCompileCommand
     printf($output);
 
     # Check if the result text contain 'error'
-    if($output =~ /error/)
+    if(ErrorInTheMessage($output) == TRUE)
     {
         # Error message detected.
         return COMPILE_ERROR;
