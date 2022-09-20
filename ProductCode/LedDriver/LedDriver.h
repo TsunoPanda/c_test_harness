@@ -1,7 +1,10 @@
 #ifndef _LEDDRIVER_H_
 #define _LEDDRIVER_H_
 
-#include "stdint.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 
 /* LED module ‚ğ•\‚·\‘¢‘Ì */
 typedef struct
