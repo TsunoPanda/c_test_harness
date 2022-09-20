@@ -137,7 +137,8 @@ sub GetAllTestModules
 {
     my ($TestModule, $aTestModule_ref) = @_;
 
-    @{$aTestModule_ref} = {};
+    # Clear the array of the test modules
+    @{$aTestModule_ref} = ();
 
     if($TestModule eq 'All')
     {
@@ -373,9 +374,10 @@ sub ExecMakeFileProcess
 # according to the result of compilation.
 sub ExecuteTestWithMessage
 {
+    # $TestModule: The module to be tested
     # $IsNoCompileError: Compilation result
     # $IsCleared: Has object files cleared or not
-    my ($isExeValid, $IsCleared) = @_;
+    my ($TestModule, $isExeValid, $IsCleared, $LOG_FILE) = @_;
 
     # The object files cleared?
     if ($IsCleared)
@@ -390,8 +392,28 @@ sub ExecuteTestWithMessage
         if($isExeValid)
         {
             # The valid executable file is exists, then execute it!
-            printf("\n***** Now execute the test code! *****\n\n");
-            system($gTargetPath.' -v');
+            printf("\n***** Now execute ".$TestModule." test code! *****\n\n");
+
+            # Adding '2>&1' means send stderr(2) to the same place as stdout (&1))
+            my $cmd = $gTargetPath.' -v 2>&1';
+
+            # Replace '/' to '\'
+            $cmd =~ s/\//\\/g;
+
+            # Execute the command and get the STDOUT using 'qx//' syntax.
+            my $output = qx/$cmd/;
+
+            # Output the results
+            my $TestMessageNumOfAstarisks = 90;
+            my $TestMessage = $TestModule." Test Result";
+            my $astarisks = '*' x $TestMessageNumOfAstarisks;
+            my $astarisks_left = '*' x (($TestMessageNumOfAstarisks-2-length($TestMessage))/2);
+            my $astarisks_right = ((length($TestMessage) % 2) == 0) ? $astarisks_left : $astarisks_left.'*';
+            print $LOG_FILE $astarisks."\n";
+            print $LOG_FILE $astarisks_left." ".$TestMessage." ".$astarisks_right."\n";
+            print $LOG_FILE $astarisks."\n\n";
+            print $LOG_FILE $output;
+            print $LOG_FILE $TestMessage." END\n\n\n";
         }
         else
         {
@@ -407,6 +429,8 @@ sub main
     my $aTestModule_ref = [];
 
     my $RunType = GetCommandLineArguments($aTestModule_ref);
+
+    open(my $LOG_FILE, "> filename.txt");
 
     foreach my $TestModule (@{$aTestModule_ref})
     {
@@ -433,8 +457,10 @@ sub main
 
         my ($isExeValid, $IsCleared) = ExecMakeFileProcess($RunType);
 
-        ExecuteTestWithMessage($isExeValid, $IsCleared);
+        ExecuteTestWithMessage($TestModule, $isExeValid, $IsCleared, $LOG_FILE);
     }
+
+    close($LOG_FILE);
 
     return 0;
 }
