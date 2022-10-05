@@ -2,7 +2,7 @@ import sys
 import json
 import subprocess
 import re
-from html import *
+from easy_html import *
 
 
 class _LineInfo:
@@ -39,7 +39,6 @@ class MisraCheckReporter:
     __MANDATORY_COLOR      = '#F18D1D'
 
     __MISRA_C_2012_RULE_FILE = 'misra_c_2012_rules.json'
-    __PRODUCT_CODE_PATH      = '../ProductCode'
     __CPPCHECK_COMMAND       = 'cppcheck --addon=misra.py'
 
     __MISRA_LINE_TYPE_VIOLATION = 0
@@ -47,7 +46,7 @@ class MisraCheckReporter:
     __MISRA_LINE_TYPE_CODE      = 1
     __MISRA_LINE_TYPE_END       = 2
 
-    def __init__(self):
+    def __init__(self, codePath):
         # A dictionary which contains MISRA C 2012 rule information.
         # The data structure is shown in below
         # 'rule index 1' :
@@ -81,6 +80,9 @@ class MisraCheckReporter:
         # Violation amount of type 'mandatory'
         self.__manCnt = 0
 
+        self.__product_code_path = codePath
+
+
     def __ExecuteCppcheckMisra(self):
         """Executes a command which checks product codes
 
@@ -93,7 +95,7 @@ class MisraCheckReporter:
          """
 
         # Make the Cppcheck command
-        cmd = self.__CPPCHECK_COMMAND + ' ' + self.__PRODUCT_CODE_PATH
+        cmd = self.__CPPCHECK_COMMAND + ' ' + self.__product_code_path
 
         # Execute the command and get the output as binary
         wholeMsgByte = subprocess.check_output(cmd,
@@ -463,9 +465,10 @@ class MisraCheckReporter:
 
 if __name__ == '__main__':
 
-    outFilePath = sys.argv[1]
+    codePath = sys.argv[1]
+    outFilePath = sys.argv[2]
 
-    reporter = MisraCheckReporter()
+    reporter = MisraCheckReporter(codePath)
 
     # At first, load the Misra C rule information
     reporter.GetMisraRuleDictionary()
