@@ -28,22 +28,22 @@ class EasyHtml:
                 return child
         return self.__CreateChild('body')
 
-    def __DumpDataAsHtml(self, indent, space = ""):
+    def __DumpDataAsHtml(self, fileHandle, indent, space = ""):
         if self.opt is None:
-            print(space + '<' + self.tag + '>')
+            fileHandle.write(space + '<' + self.tag + '>' + "\n")
         else:
-            print(space + '<' + self.tag + ' ' + self.opt + '>')
+            fileHandle.write(space + '<' + self.tag + ' ' + self.opt + '>' + "\n")
 
         nextSpace = space + (" " * indent)
 
         if self.text:
-            print(nextSpace + self.text)
+            fileHandle.write(nextSpace + self.text + "\n")
 
         if self.children is not None:
             for dChild in self.children:
-                dChild.__DumpDataAsHtml(indent, nextSpace)
+                dChild.__DumpDataAsHtml(fileHandle, indent, nextSpace)
 
-        print(space + '</' + self.tag + '>')
+        fileHandle.write(space + '</' + self.tag + '>' + "\n")
 
     def SetTitle(self, text):
         head = self.__CreateChild('head')
@@ -112,9 +112,10 @@ class EasyHtml:
         cell_font.__SetOption('color =' + fontColor)
         cell_font.__SetText(text)
 
-    def OutputHtml(self, indent):
-        print('<!DOCTYPE html>')
-        self.__DumpDataAsHtml(indent)
+    def OutputHtml(self, indent, filePath):
+        fileHandle = open(filePath, 'w')
+        fileHandle.write('<!DOCTYPE html>' + "\n")
+        self.__DumpDataAsHtml(fileHandle, indent)
 
 
 class table_cell:
@@ -166,4 +167,4 @@ if __name__ == '__main__':
         ],)
     table.CreateTableRow(second_row)
 
-    testHtml.OutputHtml(4)
+    testHtml.OutputHtml(4, 'test.html')

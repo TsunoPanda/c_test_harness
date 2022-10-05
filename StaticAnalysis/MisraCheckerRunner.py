@@ -1,3 +1,4 @@
+import sys
 import json
 import subprocess
 import re
@@ -432,7 +433,7 @@ class MisraCheckReporter:
         self.__reqCnt        = requiredViolationCount
         self.__manCnt        = mandatoryViolationCount
 
-    def MakeHtmlReport(self):
+    def MakeHtmlReport(self, outFilePath):
         """Makes a html report
 
         This method makes a html report as referring the previous
@@ -457,10 +458,13 @@ class MisraCheckReporter:
         self.__MakeReportDetailedSection(reportHtml)
 
         # output the html
-        reportHtml.OutputHtml(4)
+        reportHtml.OutputHtml(4, outFilePath)
 
 
 if __name__ == '__main__':
+
+    outFilePath = sys.argv[1]
+
     reporter = MisraCheckReporter()
 
     # At first, load the Misra C rule information
@@ -470,4 +474,4 @@ if __name__ == '__main__':
     reporter.CppCheck()
 
     # Output the report as html style
-    reporter.MakeHtmlReport()
+    reporter.MakeHtmlReport(outFilePath)
