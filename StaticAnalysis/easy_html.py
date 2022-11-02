@@ -1,3 +1,6 @@
+from typing import List
+from dataclasses import dataclass, field
+
 class EasyHtml:
 
     def __init__(self, tag = 'html'):
@@ -92,7 +95,7 @@ class EasyHtml:
         optionStr += ' style="font-size: ' + str(c_table_row.fontSize) + 'pt"'
         tableRow.__SetOption(optionStr)
 
-        for cell in c_table_row.cells:
+        for cell in c_table_row.lCells:
             tableRow.CreateTableCell(cell.text,
                                      cell.fontColor,
                                      cell.align,
@@ -117,22 +120,18 @@ class EasyHtml:
         fileHandle.write('<!DOCTYPE html>' + "\n")
         self.__DumpDataAsHtml(fileHandle, indent)
 
-
+@dataclass
 class table_cell:
-    def __init__(self, text = '', fontColor = '#000000',
-                 align = '', width = ''):
-        self.text      = text
-        self.fontColor = fontColor
-        self.align     = align
-        self.width     = width
+    text:str      = ''
+    fontColor:str = '#000000'
+    align:str     = ''
+    width:str     = ''
 
-
+@dataclass
 class table_row:
-
-    def __init__(self, bgColor = '#000000', fontSize = '1', lCells = []):
-        self.bgColor  = bgColor
-        self.fontSize = fontSize
-        self.cells    = lCells
+    bgColor:str  = '#000000'
+    fontSize:str = '1'
+    lCells:List[table_cell] = field(default_factory = list)
 
 
 if __name__ == '__main__':

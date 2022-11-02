@@ -2,51 +2,55 @@ import sys
 import json
 import subprocess
 import re
+import dataclasses
+from enum import Enum
+from typing import List
+from typing import Dict
 from easy_html import *
 
-
-class _LineInfo:
-    def __init__(self):
-
-        # MISRA_LINE_TYPE_VIOLATION or MISRA_LINE_TYPE_CODE
-        # or MISRA_LINE_TYPE_END
-        self.lineType        = None
-
-        # Path to the file where the violation was found
-        self.filePath        = None
-
-        # Line where the violation was found
-        self.violationLine   = None
-
-        # Column where the violation was found
-        self.violationColumn = None
-
-        # Description of the rule which was violated
-        self.ruleMsg         = None
-
-        # Index of the rule
-        self.ruleIdx         = None
-
-        # The code which violates the rule
-        self.code            = None
-
-
 class MisraCheckReporter:
-    __TABLE_TOP_COLOR      = '#A1C3E7'
-    __TABLE_TOP_FONT_COLOR = '#FFFFFF'
-    __ADVISORY_COLOR       = '#CCDFEF'
-    __REQUIRED_COLOR       = '#F8E9D1'
-    __MANDATORY_COLOR      = '#F18D1D'
-
     __MISRA_C_2012_RULE_FILE = 'misra_c_2012_rules.json'
     __CPPCHECK_COMMAND       = 'cppcheck --addon=misra.py'
 
-    __MISRA_LINE_TYPE_VIOLATION = 0
-    # Violation Code or any string other than cppcheck result message.
-    __MISRA_LINE_TYPE_CODE      = 1
-    __MISRA_LINE_TYPE_END       = 2
+    class __MISRA_LINE_TYPE(Enum):
+        # Violation Type
+        VIOLATION = 0
+        # Violation Code or any string other than cppcheck result message.
+        CODE      = 1
+        # End
+        END       = 2
 
-    def __init__(self, codePath):
+    class __MISRA_REPORTER_COLOR(Enum):
+        TABLE_TOP      = '#A1C3E7'
+        TABLE_TOP_FONT = '#FFFFFF'
+        ADVISORY       = '#CCDFEF'
+        REQUIRED       = '#F8E9D1'
+        MANDATORY      = '#F18D1D'
+
+    @dataclasses.dataclass
+    class __LineInfo:
+        # MISRA_LINE_TYPE_VIOLATION or MISRA_LINE_TYPE_CODE or MISRA_LINE_TYPE_END
+        lineType:        int             = None
+
+        # Path to the file where the violation was found
+        filePath:        str             = None
+
+        # Line where the violation was found
+        violationLine:   int             = None
+
+        # Column where the violation was found
+        violationColumn: int             = None
+
+        # Description of the rule which was violated
+        ruleMsg:         str             = None
+
+        # Index of the rule
+        ruleIdx:         str             = None
+
+        # The code which violates the rule
+        code:            str             = None
+
+    def __init__(self, codePath:str):
         # A dictionary which contains MISRA C 2012 rule information.
         # The data structure is shown in below
         # 'rule index 1' :
@@ -59,7 +63,7 @@ class MisraCheckReporter:
         # {
         # ....... (same as above)
         # }
-        self.__dMisraRule = {}
+        self.__dMisraRule: Dict[str, Dict[str, str]] = {}
 
         # A dictionary. key is the file path. and the value is
         # a list to the 'table_row' which contains violation
@@ -69,18 +73,18 @@ class MisraCheckReporter:
         #    table_row2,
         #    ....
         # ]
-        self.__dViolationTable = {}
+        self.__dViolationTable: Dict[str, List[table_row]] = {}
 
         # Violation amount of type 'advisory'
-        self.__advCnt = 0
+        self.__advCnt:int = 0
 
         # Violation amount of type 'required'
-        self.__reqCnt = 0
+        self.__reqCnt:int = 0
 
         # Violation amount of type 'mandatory'
-        self.__manCnt = 0
+        self.__manCnt:int = 0
 
-        self.__product_code_path = codePath
+        self.__product_code_path:str = codePath
 
 
     def __ExecuteCppcheckMisra(self):
@@ -111,7 +115,7 @@ class MisraCheckReporter:
         # Return the list
         return lWholeMsg
 
-    def __AnalyzeMessageLine(self, line):
+    def __AnalyzeMessageLine(self, lineStr:str):
         """Analyzes a line of the the cppcheck result massage
 
         This method checks the cppcheck output message line.
@@ -139,24 +143,24 @@ class MisraCheckReporter:
                    r' (.+)\[misra-c2012-(\d+\.\d+)\]')
 
         # Get the match result.
-        matchResult = re.match(pattern, line)
+        matchResult = re.match(pattern, lineStr)
 
         # If the match result is NOT None, it is violation message
         isViolationMessage = (matchResult is not None)
 
         # Remove all space to check if it is the type end
-        lineWithoutSpace = line.replace(' ', '')
+        lineWithoutSpace = lineStr.replace(' ', '')
 
         # If only '^' is remained, it is the type end
         isMsgEndLine = (lineWithoutSpace == '^')
 
         # Define the return dictionary
-        cLineInfo = _LineInfo()
+        cLineInfo = self.__LineInfo()
 
         # If it was the type violation
         if isViolationMessage is True:
             # Catch the violation information
-            cLineInfo.lineType        = self.__MISRA_LINE_TYPE_VIOLATION
+            cLineInfo.lineType        = self.__MISRA_LINE_TYPE.VIOLATION
             cLineInfo.filePath        = matchResult.group(1)
             cLineInfo.violationLine   = matchResult.group(2)
             cLineInfo.violationColumn = matchResult.group(3)
@@ -166,7 +170,7 @@ class MisraCheckReporter:
         # If it was the type end,
         elif isMsgEndLine is True:
             # No information to return. just return the type end
-            cLineInfo.lineType        = self.__MISRA_LINE_TYPE_END
+            cLineInfo.lineType        = self.__MISRA_LINE_TYPE.END
             cLineInfo.filePath        = None
             cLineInfo.violationLine   = None
             cLineInfo.violationColumn = None
@@ -178,22 +182,22 @@ class MisraCheckReporter:
             # Note: Any strings other than cppcheck result message
             #       will reach here.
             # Catch the code string
-            cLineInfo.lineType        = self.__MISRA_LINE_TYPE_CODE
+            cLineInfo.lineType        = self.__MISRA_LINE_TYPE.CODE
             cLineInfo.filePath        = None
             cLineInfo.violationLine   = None
             cLineInfo.violationColumn = None
             cLineInfo.ruleMsg         = None
             cLineInfo.ruleIdx         = None
-            cLineInfo.code            = line
+            cLineInfo.code            = lineStr
 
         # Return the result
         return cLineInfo
 
-    def __AppendTopRowOfSummaryTable(self, table, type, count):
+    def __AppendTopRowOfSummaryTable(self, table:EasyHtml, type:str, count:str):
         """Appends the top row of the summary table
         """
         top_row = table_row(
-            bgColor  = self.__TABLE_TOP_COLOR,
+            bgColor  = self.__MISRA_REPORTER_COLOR.TABLE_TOP.value,
             fontSize = 17,
             lCells   = [
                 table_cell(text = type),
@@ -202,7 +206,7 @@ class MisraCheckReporter:
         )
         table.CreateTableRow(top_row)
 
-    def __AppendRowOfSummaryTable(self, table, type, count, color):
+    def __AppendRowOfSummaryTable(self, table:EasyHtml, type:str, count:str, color:str):
         """Appends a row of the summary table
         """
 
@@ -216,7 +220,7 @@ class MisraCheckReporter:
         )
         row = table.CreateTableRow(row)
 
-    def __MakeReportSummarySection(self, reportHtml):
+    def __MakeReportSummarySection(self, reportHtml:EasyHtml):
         """Makes a summary table on the html
 
         This method makes a summary table on the input html object
@@ -239,21 +243,21 @@ class MisraCheckReporter:
         self.__AppendRowOfSummaryTable(summary_table,
                                        'Advisory',
                                        str(self.__advCnt),
-                                       self.__ADVISORY_COLOR)
+                                       self.__MISRA_REPORTER_COLOR.ADVISORY.value)
 
         # Append the required violation row to the table
         self.__AppendRowOfSummaryTable(summary_table,
                                        'Required',
                                        str(self.__reqCnt),
-                                       self.__REQUIRED_COLOR)
+                                       self.__MISRA_REPORTER_COLOR.REQUIRED.value)
 
         # Append the mandatory violation row to the table
         self.__AppendRowOfSummaryTable(summary_table,
                                        'Mandatory',
                                        str(self.__manCnt),
-                                       self.__MANDATORY_COLOR)
+                                       self.__MISRA_REPORTER_COLOR.MANDATORY.value)
 
-    def __MakeReportDetailedSection(self, reportHtml):
+    def __MakeReportDetailedSection(self, reportHtml:EasyHtml):
         """Makes the detailed table on the html
 
         This method makes the detailed table on the input html object as
@@ -262,9 +266,9 @@ class MisraCheckReporter:
         """
 
         # List of the top row of the table
-        color = self.__TABLE_TOP_FONT_COLOR
+        color = self.__MISRA_REPORTER_COLOR.TABLE_TOP_FONT.value
         top_row = table_row(
-            bgColor  = self.__TABLE_TOP_COLOR,
+            bgColor  = self.__MISRA_REPORTER_COLOR.TABLE_TOP.value,
             fontSize = 17,
             lCells   =
             [
@@ -293,7 +297,7 @@ class MisraCheckReporter:
         """Sorts the violation table by code line
         """
         def sort_key(table_row):
-            return table_row.cells[0].text.zfill(10)
+            return table_row.lCells[0].text.zfill(10)
 
         for key in self.__dViolationTable:
             self.__dViolationTable[key] = sorted(self.__dViolationTable[key],
@@ -344,7 +348,7 @@ class MisraCheckReporter:
             cLineAnalyzeResult = self.__AnalyzeMessageLine(line)
 
             # If it was the violation message,
-            if cLineAnalyzeResult.lineType == self.__MISRA_LINE_TYPE_VIOLATION:
+            if cLineAnalyzeResult.lineType == self.__MISRA_LINE_TYPE.VIOLATION:
                 # Create a dictionary which contains the html detailed row
                 # table data
 
@@ -376,7 +380,7 @@ class MisraCheckReporter:
 
             # If it was the code message,
             # (or any other string than cppcheck result message)
-            elif cLineAnalyzeResult.lineType == self.__MISRA_LINE_TYPE_CODE:
+            elif cLineAnalyzeResult.lineType == self.__MISRA_LINE_TYPE.CODE:
                 # Check if dHtmlRowInfo exists
                 if 'cTableRow' not in locals():
                     # Not exists.
@@ -385,7 +389,7 @@ class MisraCheckReporter:
                     continue
 
                 # Save the code string to the dictionary
-                cTableRow.cells[1].text = cLineAnalyzeResult.code
+                cTableRow.lCells[1].text = cLineAnalyzeResult.code
 
             # If it was the end message,
             else :  # dLineAnalyzeResult['lineType'] == MISRA_LINE_TYPE_END
@@ -397,7 +401,7 @@ class MisraCheckReporter:
                     continue
 
                 # Save rule index into the local variable
-                ruleIdx = cTableRow.cells[2].text
+                ruleIdx = cTableRow.lCells[2].text
 
                 # If it was the advisory violation,
                 if self.__dMisraRule[ruleIdx]['Type'] == 'Advisory' :
@@ -405,7 +409,7 @@ class MisraCheckReporter:
                     advisoryViolationCount += 1
                     # Set the background color of the html table row as
                     # 'advisory color'
-                    cTableRow.bgColor = self.__ADVISORY_COLOR
+                    cTableRow.bgColor = self.__MISRA_REPORTER_COLOR.ADVISORY.value
 
                 # If it was the required violation,
                 elif self.__dMisraRule[ruleIdx]['Type'] == 'Required' :
@@ -413,7 +417,7 @@ class MisraCheckReporter:
                     requiredViolationCount += 1
                     # Set the background color of the html table row as
                     # 'required color'
-                    cTableRow.bgColor = self.__REQUIRED_COLOR
+                    cTableRow.bgColor = self.__MISRA_REPORTER_COLOR.REQUIRED.value
 
                 # If it was the mandatory violation,
                 else:  # self.__dMisraRule[ruleIdx]['Type'] == 'Mandatory'
@@ -421,7 +425,7 @@ class MisraCheckReporter:
                     mandatoryViolationCount += 1
                     # Set the background color of the html table row as
                     # 'mandatory color'
-                    cTableRow.bgColor = self.__MANDATORY_COLOR
+                    cTableRow.bgColor = self.__MISRA_REPORTER_COLOR.MANDATORY.value
 
                 # Append a row of html detailed table according to the private
                 # variable
@@ -435,7 +439,7 @@ class MisraCheckReporter:
         self.__reqCnt        = requiredViolationCount
         self.__manCnt        = mandatoryViolationCount
 
-    def MakeHtmlReport(self, outFilePath):
+    def MakeHtmlReport(self, outFilePath:str):
         """Makes a html report
 
         This method makes a html report as referring the previous
@@ -465,7 +469,7 @@ class MisraCheckReporter:
 
 if __name__ == '__main__':
 
-    codePath = sys.argv[1]
+    codePath    = sys.argv[1]
     outFilePath = sys.argv[2]
 
     reporter = MisraCheckReporter(codePath)
