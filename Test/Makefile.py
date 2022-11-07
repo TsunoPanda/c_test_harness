@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import subprocess
@@ -67,7 +68,7 @@ class MakeFile:
         self.__AllRelevantFiles:List[RelevantFiles] = []
 
     def __std_output(self, msg:str):
-        print(msg, end='')
+        print(msg)
 
     def __OptionArrayToCommand(self, lOption:List[str])->str:
         """
@@ -99,39 +100,6 @@ class MakeFile:
             return (True, filename)
         else:
             return (False, filename)
-
-    def __MakeAllRelevantFileDict(self, lSourceFile:List[str], lOption:List[str], objPath:str) -> List[RelevantFiles]:
-        """
-        This function makes the global array 'gaAllRelevantFiles' which has all relevant file paths
-        aSourceFiles_ref: Reference to the array which all the source files
-        objPath: # Path to a folder where all object files are stored
-        """
-
-        # Create an anonymous array for all relevant files
-        lAllRelevantFiles = []
-
-        # Make all the relevant file array for each source file
-        for i_cFile in lSourceFile:
-            # Check if the source file has a good format.
-            is_C_file, fileName = self.__CheckSourceFile(i_cFile)
-            if is_C_file == True :
-
-                # Initialize the relevant file object
-                dRlevantFile = self.RelevantFiles(
-                    src = i_cFile,
-                    obj = objPath + '/' + fileName + '.o',
-                    dep = objPath + '/' + fileName + '.d',
-                    opt = self.__OptionArrayToCommand(lOption)
-                    )
-
-                # Push the anonymous hash into the global array
-                lAllRelevantFiles.append(dRlevantFile)
-            else:
-                # The input .c source file has a bad format. Display the warning message.
-                self.__std_output('Warning: The way to define the c file is not correct.\n');
-                self.__std_output('>>> ' + i_cFile + '\n');
-
-        return lAllRelevantFiles
 
     def __CreateObjectFolder(self, objPath:str):
         """
@@ -182,7 +150,7 @@ class MakeFile:
         compile_cmd = compile_cmd + ' 2>&1'
 
         # Display the command.
-        self.__std_output(compile_cmd + '\n')
+        self.__std_output(compile_cmd)
 
         # Execute the command and get the STDOUT.
         # Execute the command and get the output as binary
@@ -197,9 +165,10 @@ class MakeFile:
         wholeMsg = wholeMsgByte.decode()
 
         # Display the result.
-        self.__std_output(wholeMsg);
+        if not wholeMsg == '':
+            self.__std_output(wholeMsg);
 
-        # Check if the result text contain 'error'
+            # Check if the result text contain 'error'
         if self.__ErrorInTheMessage(wholeMsg) == True:
             # Error message detected.
             return self.CompileStatus.COMPILE_ERROR
@@ -267,7 +236,7 @@ class MakeFile:
             # If the source file does NOT exists
             if os.path.exists(dRelativeFiles.src) == False:
                 # The source file was not found
-                self.__std_output("Error: Could not find " + dRelativeFiles.src + '\n')
+                self.__std_output("Error: Could not find " + dRelativeFiles.src)
 
                 # Error detected, set the error indicator 'TRUE'
                 IsCompileErrorExist = True
@@ -292,7 +261,7 @@ class MakeFile:
 
             else:
                 # The source file does not need to be compiled. skip.
-                self.__std_output('skip compiling ' + dRelativeFiles.obj + '\n')
+                self.__std_output('skip compiling ' + dRelativeFiles.obj)
 
         # Check the Compiling result
         # Error exists?
@@ -332,7 +301,7 @@ class MakeFile:
         cmd += ' 2>&1'
 
         # Display the command
-        self.__std_output(cmd + '\n');
+        self.__std_output(cmd);
 
         # Execute the command and get the STDOUT using 'qx//' syntax.
         # Execute the command and get the output as binary
@@ -347,7 +316,8 @@ class MakeFile:
         wholeMsg = wholeMsgByte.decode()
 
         # Display the result.
-        self.__std_output(wholeMsg);
+        if not wholeMsg == '':
+            self.__std_output(wholeMsg);
 
         # Check if the result text contain 'error'
         if self.__ErrorInTheMessage(wholeMsg) == True:
@@ -407,14 +377,14 @@ class MakeFile:
         # If at least one error happened.
         elif compileStates == self.WholeCompileStatus.AT_LEAST_ONE_COMPILE_ERROR:
             # Skip linking due to the error
-            self.__std_output('Skip linking, because at least one compile error happened.\n')
+            self.__std_output('Skip linking, because at least one compile error happened.')
             return False;
         # If no compiled file exists
         else : # compileStates == self.WholeCompileStatus.NO_COMPILED_FILE
             # If the executable exists,
             if os.path.exists('./' + targetPath) == True:
                 # Skip linking because no updated source file, and the executable exists.
-                self.__std_output('Skip linking, because nothing has been updated.\n')
+                self.__std_output('Skip linking, because nothing has been updated.')
                 return False
             else:
                 # No compiled file, but there isn't executable file,
@@ -442,16 +412,31 @@ class MakeFile:
         # No error, then the execute file is valid
         return(ExecutableStatus.EXECUTABLE_VALID)
 
-    def AddSrc(self, aSrcFilePath_ref:List[str], aOption_ref:List[str], objPath:str):
+    def AddSrc(self, source_file:str, lOption:List[str], objPath:str):
         """
-        aSrcFilePath_ref: 
+        source_file: 
         aOption_ref:
         objPath:
         """
 
-        # Initialize an array which will contains all source, object, dependency file paths.
-        # For more explanation, see where this is defined.
-        self.__AllRelevantFiles += self.__MakeAllRelevantFileDict(aSrcFilePath_ref, aOption_ref, objPath)
+        # Make all the relevant file array for each source file
+        is_C_file, fileName = self.__CheckSourceFile(source_file)
+        if is_C_file == True :
+            # Initialize the relevant file object
+            dRlevantFile = self.RelevantFiles(
+                src = source_file,
+                obj = objPath + '/' + fileName + '.o',
+                dep = objPath + '/' + fileName + '.d',
+                opt = self.__OptionArrayToCommand(lOption)
+                )
+
+            # Append a instance which will contains all source, object, dependency file paths.
+            # For more explanation, see where this is defined.
+            self.__AllRelevantFiles.append(dRlevantFile)
+        else:
+            # The input .c source file has a bad format. Display the warning message.
+            self.__std_output('Warning: The way to define the c file is not correct.');
+            self.__std_output('>>> ' + source_file);
 
     def Make(self)->ExecutableStatus:
         """
@@ -475,7 +460,7 @@ class MakeFile:
 
         return self.__IsTheExecutableValid(compileState, linkState)
 
-    def __GetAllFiles(dir_path:str)->List[str]:
+    def __GetAllFiles(self, dir_path:str)->List[str]:
         FileList = []
 
         if dir_path[-1] != '/':
@@ -487,6 +472,11 @@ class MakeFile:
             if(os.path.isfile(FileOrDIr)):
                 FileList.append(FileOrDIr)
         return FileList
+
+    def __RemoveFile(self, file_path:str):
+        if os.path.exists(file_path):
+            self.__std_output('Removing ' + file_path)
+            os.remove(file_path)
 
     def Clear(self):
         """
@@ -502,7 +492,9 @@ class MakeFile:
             # Remove all files in the object directly
             for file in afiles:
                 # Remove a file
-                os.remove(file);
+                self.__RemoveFile(file)
+        # Remove the target file
+        self.__RemoveFile(self.__TargetPath)
 
     def Build(self)->ExecutableStatus:
         """
@@ -522,11 +514,31 @@ if __name__ == "__main__":
     linkerOption = ['-MMD', '-Wall', '-O2']
     instance = MakeFile(target, compiler, includePath, linkerOption)
 
-    source = ['./MakefileTest/main.c', './MakefileTest/math/math.c']
     compileOption = ['-MMD', '-Wall', '-O2']
     objPath = './MakefileTest/Obj'
+
+    source = './MakefileTest/main.c'
     instance.AddSrc(source, compileOption, objPath)
 
+    source = './MakefileTest/math/math.c'
+    instance.AddSrc(source, compileOption, objPath)
+
+    print('****At first invoke clear****')
+    instance.Clear()
+
+    print('\n****Start make test****')
     instance.Make()
+
+    print('\n****Start make test second time. should be skipped all compilation****')
+    instance.Make()
+
+    print('\n****Start build test.****')
+    instance.Build()
+
+    print('\n****Start only make updated files test.****')
+    TimeStampComp.ClearTimeStampDict()
+    os.utime(path='./MakefileTest/main.c', times=None)
+    instance.Make()
+
 
 

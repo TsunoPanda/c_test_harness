@@ -99,6 +99,14 @@ def IsTheFileLatest(inFile:str, lFiles:List[str])->bool:
     # Reaching here means the checked file is the newest one.
     return True
 
+def ClearTimeStampDict() -> None:
+    """
+    This function clears saved timestamp information. Intended to be used for test
+    """
+
+    global __SavedTimeStampDict
+    __SavedTimeStampDict = {}
+
 if __name__ == "__main__":
 
     file1 = 'TimeStampComp.py'
