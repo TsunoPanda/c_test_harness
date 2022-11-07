@@ -122,7 +122,7 @@
     {
         "Type": "Required",
         "Decidable": "Decidable",
-        "Rule": "The program shall contain no violations of the standard C syntax and constraints, and shall not exceed the implementationÅfs translation limits"
+        "Rule": "The program shall contain no violations of the standard C syntax and constraints, and shall not exceed the implementation?fs translation limits"
     },
 
     "1.2":

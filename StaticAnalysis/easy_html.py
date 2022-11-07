@@ -1,21 +1,46 @@
+"""
+This module provides utilities to make the html which contains only title and simple table.
+"""
 from typing import List
 from dataclasses import dataclass, field
 
+@dataclass
+class Cell:
+    """
+    This class is a data class which has parameters for the table cell.
+    """
+    text:       str = ''
+    font_color: str = '#000000'
+    align:      str = ''
+    width:      str = ''
+
+@dataclass
+class TableRow():
+    """
+    This class is a data class which has parameters for the table row.
+    """
+    background_color: str        = '#000000'
+    font_size:        str        = '1'
+    cells:            List[Cell] = field(default_factory = list)
+
 class EasyHtml:
+    """
+    This class expresses html file which contains only title and simple table
+    """
 
-    def __init__(self, tag = 'html'):
-        self.tag      = tag
-        self.opt      = None
-        self.text     = None
-        self.children = None
+    def __init__(self, tag:str = 'html') -> None:
+        self.tag:str                 = tag
+        self.opt:str                 = None
+        self.text:str                = None
+        self.children:List[EasyHtml] = None
 
-    def __SetOption(self, option):
+    def __set_option(self, option:str) -> None: # pylint: disable=unused-private-member
         self.opt = option
 
-    def __SetText(self, text):
+    def __set_text(self, text:str) -> None: # pylint: disable=unused-private-member
         self.text = text
 
-    def __CreateChild(self, tag):
+    def __create_child(self, tag:str) -> 'EasyHtml':
 
         if self.children is None:
             self.children = []
@@ -23,147 +48,169 @@ class EasyHtml:
         child = EasyHtml(tag)
         self.children.append(child)
 
-        return (child)
+        return child
 
-    def __GetBody(self):
+    def __get_body(self) -> 'EasyHtml':
         for child in self.children:
             if child.tag == 'body':
                 return child
-        return self.__CreateChild('body')
+        return self.__create_child('body')
 
-    def __DumpDataAsHtml(self, fileHandle, indent, space = ""):
+    def __dump_data_as_html(self, file_handle, indent:int, space:str = "") -> None:
         if self.opt is None:
-            fileHandle.write(space + '<' + self.tag + '>' + "\n")
+            file_handle.write(space + '<' + self.tag + '>' + "\n")
         else:
-            fileHandle.write(space + '<' + self.tag + ' ' + self.opt + '>' + "\n")
+            file_handle.write(space + '<' + self.tag + ' ' + self.opt + '>' + "\n")
 
-        nextSpace = space + (" " * indent)
+        next_space = space + (" " * indent)
 
         if self.text:
-            fileHandle.write(nextSpace + self.text + "\n")
+            file_handle.write(next_space + self.text + "\n")
 
         if self.children is not None:
-            for dChild in self.children:
-                dChild.__DumpDataAsHtml(fileHandle, indent, nextSpace)
+            for child in self.children:
+                child.__dump_data_as_html(file_handle,  # pylint: disable=protected-access
+                                          indent,
+                                          next_space)
 
-        fileHandle.write(space + '</' + self.tag + '>' + "\n")
+        file_handle.write(space + '</' + self.tag + '>' + "\n")
 
-    def SetTitle(self, text):
-        head = self.__CreateChild('head')
-        title = head.__CreateChild('title')
-        title.__SetText(text)
+    def set_title(self, text:str) -> None:
+        """
+        This method adds a title text to the EasyHtml instance
+        """
+        head = self.__create_child('head')
+        title = head.__create_child('title') # pylint: disable=protected-access
+        title.__set_text(text)               # pylint: disable=protected-access
 
-    def SetBodyH1(self, text, align):
-        body = self.__GetBody()
-        h1_title = body.__CreateChild('h1')
-        h1_title.__SetOption('align = ' + align)
-        h1_title.__SetText(text)
+    def set_body_h1(self, text:str, align:str) -> None:
+        """
+        This method adds high light 1 text to the EasyHtml instance
+        """
+        body = self.__get_body()
+        h1_title = body.__create_child('h1')      # pylint: disable=protected-access
+        h1_title.__set_option('align = ' + align) # pylint: disable=protected-access
+        h1_title.__set_text(text)                 # pylint: disable=protected-access
 
-    def SetBodyH2(self, text, align):
-        body = self.__GetBody()
-        h2_title = body.__CreateChild('h2')
-        h2_title.__SetOption('align = ' + align)
-        h2_title.__SetText(text)
+    def set_body_h2(self, text:str, align:str) -> None:
+        """
+        This method adds high light 2 text to the EasyHtml instance
+        """
+        body = self.__get_body()
+        h2_title = body.__create_child('h2')      # pylint: disable=protected-access
+        h2_title.__set_option('align = ' + align) # pylint: disable=protected-access
+        h2_title.__set_text(text)                 # pylint: disable=protected-access
 
-    def SetBodyH3(self, text, align):
-        body = self.__GetBody()
-        h2_title = body.__CreateChild('h3')
-        h2_title.__SetOption('align = ' + align)
-        h2_title.__SetText(text)
+    def set_body_h3(self, text:str, align:str) -> None:
+        """
+        This method adds high light 3 text to the EasyHtml instance
+        """
+        body = self.__get_body()
+        h2_title = body.__create_child('h3')      # pylint: disable=protected-access
+        h2_title.__set_option('align = ' + align) # pylint: disable=protected-access
+        h2_title.__set_text(text)                 # pylint: disable=protected-access
 
-    def CreateTable(self, border, align = '', width = ''):
-        body = self.__GetBody()
-        table = body.__CreateChild('table')
-        optionStr = 'border = "' + str(border) + '"'
+    def create_table(self, border:int, align:str = '', width:str = '') -> 'EasyHtml':
+        """
+        This method creates a table object in the EasyHtml instance and return the
+        table object.
+        """
+        body = self.__get_body()
+        table = body.__create_child('table') # pylint: disable=protected-access
+        option_str = 'border = "' + str(border) + '"'
         if align != '':
-            optionStr += (' align = ' + align)
+            option_str += (' align = ' + align)
         if width != '':
-            optionStr += (' width = "' + width + '"')
-        table.__SetOption(optionStr)
+            option_str += (' width = "' + width + '"')
+        table.__set_option(option_str) # pylint: disable=protected-access
         return table
 
-    def CreateBlankTableRow(self, bgColor, fontSize):
-        tableRow = self.__CreateChild('tr')
-        optionStr  = 'bgcolor = ' + bgColor
-        optionStr += ' style="font-size: ' + str(fontSize) + 'pt"'
-        tableRow.__SetOption(optionStr)
-        return tableRow
+    def create_blank_table_row(self, background_color:str, font_size:int):
+        """
+        This method creates a table row object in the table instance and return the
+        row object.
+        """
+        table_row = self.__create_child('tr')
+        option_str  = 'bgcolor = ' + background_color
+        option_str += ' style="font-size: ' + str(font_size) + 'pt"'
+        table_row.__set_option(option_str) # pylint: disable=protected-access
+        return table_row
 
-    def CreateTableRow(self, c_table_row):
-        tableRow = self.__CreateChild('tr')
-        optionStr  = 'bgcolor = ' + c_table_row.bgColor
-        optionStr += ' style="font-size: ' + str(c_table_row.fontSize) + 'pt"'
-        tableRow.__SetOption(optionStr)
+    def create_table_row(self, table_row_param:TableRow) -> 'EasyHtml':
+        """
+        This method creates a table row object according to input TableRow instance
+        in the table instance and return the row object.
+        """
+        table_row = self.__create_child('tr')
+        option_str  = 'bgcolor = ' + table_row_param.background_color
+        option_str += ' style="font-size: ' + str(table_row_param.font_size) + 'pt"'
+        table_row.__set_option(option_str) # pylint: disable=protected-access
 
-        for cell in c_table_row.lCells:
-            tableRow.CreateTableCell(cell.text,
-                                     cell.fontColor,
-                                     cell.align,
-                                     cell.width)
-        return tableRow
+        for cell in table_row_param.cells:
+            table_row.create_table_cell(cell.text, # pylint: disable=protected-access
+                                       cell.font_color,
+                                       cell.align,
+                                       cell.width)
+        return table_row
 
-    def CreateTableCell(self, text,
-                        fontColor = '#000000', align = '', width = ''):
-        cell = self.__CreateChild('th')
-        optionStr = ''
+    def create_table_cell(self, text:str,
+                        font_color:str = '#000000', align:str = '', width:str = ''):
+        """
+        This method creates a table cell object in the table row instance and return the
+        cell object.
+        """
+        cell = self.__create_child('th')
+        option_str = ''
         if align != '':
-            optionStr += (' align = ' + align)
+            option_str += (' align = ' + align)
         if width != '':
-            optionStr += (' width = "' + width + '"')
-        cell.__SetOption(optionStr)
-        cell_font = cell.__CreateChild('font')
-        cell_font.__SetOption('color =' + fontColor)
-        cell_font.__SetText(text)
+            option_str += (' width = "' + width + '"')
+        cell.__set_option(option_str) # pylint: disable=protected-access
+        cell_font = cell.__create_child('font') # pylint: disable=protected-access
+        cell_font.__set_option('color =' + font_color) # pylint: disable=protected-access
+        cell_font.__set_text(text) # pylint: disable=protected-access
 
-    def OutputHtml(self, indent, filePath):
-        fileHandle = open(filePath, 'w')
-        fileHandle.write('<!DOCTYPE html>' + "\n")
-        self.__DumpDataAsHtml(fileHandle, indent)
-
-@dataclass
-class table_cell:
-    text:str      = ''
-    fontColor:str = '#000000'
-    align:str     = ''
-    width:str     = ''
-
-@dataclass
-class table_row:
-    bgColor:str  = '#000000'
-    fontSize:str = '1'
-    lCells:List[table_cell] = field(default_factory = list)
-
+    def output_html(self, indent:int, file_path:str):
+        """
+        This method saves the html file at the input file path.
+        """
+        with  open(file_path, 'w', encoding = 'UTF-8') as file_handle:
+            file_handle.write('<!DOCTYPE html>' + "\n")
+            self.__dump_data_as_html(file_handle, indent)
 
 if __name__ == '__main__':
-    testHtml = EasyHtml()
-    testHtml.SetTitle('this is the title')
-    testHtml.SetBodyH1('this is the body highlight 1', 'center')
-    testHtml.SetBodyH2('this is the body highlight 2', 'center')
-    testHtml.SetBodyH3('this is the body highlight 3', 'center')
+    test_html = EasyHtml()
+    test_html.set_title('this is the title')
+    test_html.set_body_h1('this is the body highlight 1', 'center')
+    test_html.set_body_h2('this is the body highlight 2', 'center')
+    test_html.set_body_h3('this is the body highlight 3', 'center')
 
     # Create a table
-    table = testHtml.CreateTable(5, 'center', '50%')
+    test_table = test_html.create_table(5, 'center', '50%')
 
-    top_row = table_row(
-        bgColor  = '#FFFFFF',
-        fontSize = 17,
-        lCells   =
+    # Create the first row of the table
+    top_row = TableRow(
+        background_color  = '#FFFFFF',
+        font_size = 17,
+        cells   =
         [
-            table_cell(text = 'this is first cell'),
-            table_cell(text = 'this is second cell'),
+            Cell(text = 'this is first cell'),
+            Cell(text = 'this is second cell'),
         ],)
-    table.CreateTableRow(top_row)
+    test_table.create_table_row(top_row)
 
-    second_row = table_row(
-        bgColor  = '#00AA00',
-        fontSize = 17,
-        lCells   =
+    # Create the second row of the table
+    second_row = TableRow(
+        background_color  = '#00AA00',
+        font_size = 17,
+        cells   =
         [
-            table_cell(text = 'this is first cell of second row',
-                       fontColor = '#FFFFFF'),
-            table_cell(text = 'this is second cell of second row',
-                       fontColor = '#FFFFFF'),
+            Cell(text = 'this is first cell of second row',
+                       font_color = '#FFFFFF'),
+            Cell(text = 'this is second cell of second row',
+                       font_color = '#FFFFFF'),
         ],)
-    table.CreateTableRow(second_row)
+    test_table.create_table_row(second_row)
 
-    testHtml.OutputHtml(4, 'test.html')
+    # Output the html file
+    test_html.output_html(4, 'test.html')
