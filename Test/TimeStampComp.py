@@ -99,6 +99,24 @@ def IsTheFileLatest(inFile:str, lFiles:List[str])->bool:
     # Reaching here means the checked file is the newest one.
     return True
 
+def IsTheFileOldest(inFile:str, lFiles:List[str])->bool:
+    """
+    # This function checks if the first input file is the latest compared
+    # to the files in the list input as the second parameter.
+    # inFile: The file to be checked.
+    # aFileList_ref: Reference to the array containing files to be compared.
+    """
+
+    # Check the file with all files in the array
+    for fileCompared in lFiles :
+        # If a file in the array is newer,
+        if CompareTimestamps(inFile, fileCompared) == CompResult.FILE1_IS_NEWER:
+            # Return false
+            return False
+
+    # Reaching here means the checked file is the newest one.
+    return True
+
 def ClearTimeStampDict() -> None:
     """
     This function clears saved timestamp information. Intended to be used for test

@@ -2,10 +2,12 @@ import sys
 import os
 import re
 import subprocess
-import TimeStampComp
+import glob
 from enum import Enum
 from typing import List
 import dataclasses
+import TimeStampComp
+import jsonc
 
 # Return value of 'Makefile.Make' and 'Makefile.Build'
 class ExecutableStatus(Enum):
@@ -38,7 +40,7 @@ class MakeFile:
         dep: str
         opt: str
 
-    def __init__(self, targetPath:str, compiler:str, lIncludePath:List[str], lLinkerOption:List[str]):
+    def __init__(self, targetPath:str = '', compiler:str = '', lIncludePath:List[str] = [], lLinkerOption:List[str] = []):
         """
         This function initializes all global variables in this module
         targetPath: Path to the target executable file
@@ -88,7 +90,7 @@ class MakeFile:
         # Make the array which will have include options as members.
         # e.g ["../ProductCode/SetAndGet/", "./TestHarness/"]
         #  -> ["-I ../ProductCode/SetAndGet/", "-I ./TestHarness/"]
-        lIncludeOptions = map(lambda s: '-I ' + s, lIncludePath)
+        lIncludeOptions = list(map(lambda s: '-I ' + s, lIncludePath))
 
         # Get the option string by inputting the option array to 'OptionArrayToCommand', and return the result.
         return self.__OptionArrayToCommand(lIncludeOptions)
@@ -159,7 +161,8 @@ class MakeFile:
                                                    stderr=subprocess.STDOUT,
                                                    shell=True)
         except subprocess.CalledProcessError as e:
-            self.__std_output("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+            self.__std_output(e.output.decode())
+            return self.CompileStatus.COMPILE_ERROR
 
         # Convert the binary into string
         wholeMsg = wholeMsgByte.decode()
@@ -168,13 +171,8 @@ class MakeFile:
         if not wholeMsg == '':
             self.__std_output(wholeMsg);
 
-            # Check if the result text contain 'error'
-        if self.__ErrorInTheMessage(wholeMsg) == True:
-            # Error message detected.
-            return self.CompileStatus.COMPILE_ERROR
-        else:
-            # No error message detected.
-            return self.CompileStatus.COMPILE_SUCCEEDED
+        # No error message detected.
+        return self.CompileStatus.COMPILE_SUCCEEDED
 
     def __DoesTheFileNeedToBeCompiled(self, dRelevantFile:RelevantFiles)->bool:
         """
@@ -310,7 +308,8 @@ class MakeFile:
                                                    stderr=subprocess.STDOUT,
                                                    shell=True)
         except subprocess.CalledProcessError as e:
-            self.__std_output("command '{}' return with error (code {}): {}".format(e.cmd, e.returncode, e.output))
+            self.__std_output(e.output.decode())
+            return self.LinkStatus.LINK_ERROR
 
         # Convert the binary into string
         wholeMsg = wholeMsgByte.decode()
@@ -319,13 +318,8 @@ class MakeFile:
         if not wholeMsg == '':
             self.__std_output(wholeMsg);
 
-        # Check if the result text contain 'error'
-        if self.__ErrorInTheMessage(wholeMsg) == True:
-            # Error message detected.
-            return self.LinkStatus.LINK_ERROR
-        else:
-            # No error message detected.
-            return self.LinkStatus.LINK_SUCCEEDED
+        # No error message detected.
+        return self.LinkStatus.LINK_SUCCEEDED
 
     def __GetRelatedFileList(self, dFilePath:str)->List[str]:
         """
@@ -358,6 +352,9 @@ class MakeFile:
 
         # Close the dependency file.
         InFile.close()
+
+        # Remove blank memnber just in case
+        fileList = [file for file in fileList if file != '']
 
         # Return the array of the related files
         return fileList
@@ -433,10 +430,46 @@ class MakeFile:
             # Append a instance which will contains all source, object, dependency file paths.
             # For more explanation, see where this is defined.
             self.__AllRelevantFiles.append(dRlevantFile)
+            return(dRlevantFile.obj)
         else:
             # The input .c source file has a bad format. Display the warning message.
             self.__std_output('Warning: The way to define the c file is not correct.');
             self.__std_output('>>> ' + source_file);
+
+    def load_json_makefile(self, json_path):
+        with  open(json_path, 'r', encoding = 'UTF-8') as json_file:
+            makefile_dir = jsonc.load(json_file)
+
+            # Overwrite
+            if 'compiler' in makefile_dir:
+                self.__Compiler = makefile_dir['compiler']
+
+            # Overwrite
+            if 'target' in makefile_dir:
+                self.__TargetPath = makefile_dir['target']
+
+            # Overwrite
+            if 'linker_option' in makefile_dir:
+                self.__LinkerOptionString = self.__OptionArrayToCommand(makefile_dir['linker_option'])
+
+            # Append
+            if 'include_path' in makefile_dir:
+                self.__IncludeString  += f' {self.__IncludePathArrayToCommand(makefile_dir["include_path"])}'
+
+            # Append
+            obj_list = []
+            if 'source_file' in makefile_dir:
+                for source in makefile_dir['source_file']:
+                    obj_list.append(self.AddSrc(source['path'], source['opt'], source['obj_dir']))
+
+            return(obj_list)
+
+
+    def get_all_object_path(self):
+        return [relevant_file.obj for relevant_file in self.__AllRelevantFiles]
+
+    def get_target_path(self):
+        return(self.__TargetPath)
 
     def Make(self)->ExecutableStatus:
         """
@@ -460,22 +493,9 @@ class MakeFile:
 
         return self.__IsTheExecutableValid(compileState, linkState)
 
-    def __GetAllFiles(self, dir_path:str)->List[str]:
-        FileList = []
-
-        if dir_path[-1] != '/':
-            dir_path += '/' 
-
-        AllInDir = os.listdir(dir_path)
-        for FileOrDIr in AllInDir:
-            FileOrDIr = dir_path + FileOrDIr
-            if(os.path.isfile(FileOrDIr)):
-                FileList.append(FileOrDIr)
-        return FileList
-
     def __RemoveFile(self, file_path:str):
         if os.path.exists(file_path):
-            self.__std_output('Removing ' + file_path)
+            self.__std_output('Removing ' + file_path.replace('\\', '/'))
             os.remove(file_path)
 
     def Clear(self):
@@ -487,7 +507,7 @@ class MakeFile:
             objPath = self.__GetDirectry(hAllRelevantFiles_ref.obj)
 
             # Get the list of all files in the object path
-            afiles = self.__GetAllFiles(objPath)
+            afiles = glob.glob(objPath+'\*')
 
             # Remove all files in the object directly
             for file in afiles:
@@ -508,20 +528,28 @@ class MakeFile:
         return self.Make()
 
 if __name__ == "__main__":
-    target = './MakefileTest/test.exe'
-    compiler = 'gcc'
-    includePath = ['./MakefileTest/math']
-    linkerOption = ['-MMD', '-Wall', '-O2']
-    instance = MakeFile(target, compiler, includePath, linkerOption)
+    source_add_from_json = True
+    if source_add_from_json == True:
+        instance = MakeFile()
+        instance.load_json_makefile('./MakefileTest/makefile.jsonc')
+    else:
+        target = './MakefileTest/test.exe'
+        compiler = 'gcc'
+        includePath = ['./MakefileTest/math']
+        linkerOption = ['-MMD', '-Wall', '-O2']
+        instance = MakeFile(target, compiler, includePath, linkerOption)
 
-    compileOption = ['-MMD', '-Wall', '-O2']
-    objPath = './MakefileTest/Obj'
+        compileOption = ['-MMD', '-Wall', '-O2']
+        objPath = './MakefileTest/Obj'
 
-    source = './MakefileTest/main.c'
-    instance.AddSrc(source, compileOption, objPath)
+        source = './MakefileTest/main.c'
+        instance.AddSrc(source, compileOption, objPath)
 
-    source = './MakefileTest/math/math.c'
-    instance.AddSrc(source, compileOption, objPath)
+        source = './MakefileTest/math/math.c'
+        instance.AddSrc(source, compileOption, objPath)
+
+    print('**** Output all object file to be generated ****')
+    print(instance.get_all_object_path())
 
     print('****At first invoke clear****')
     instance.Clear()
@@ -537,7 +565,7 @@ if __name__ == "__main__":
 
     print('\n****Start only make updated files test.****')
     TimeStampComp.ClearTimeStampDict()
-    os.utime(path='./MakefileTest/main.c', times=None)
+    os.utime(path='./MakefileTest/math/math.h', times=None)
     instance.Make()
 
 
