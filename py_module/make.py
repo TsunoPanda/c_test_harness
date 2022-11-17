@@ -470,10 +470,10 @@ class MakeFile:
         This method read a json file which contains source files to be compiled and
         associated compile options
         '''
-        
         dir_path = os.path.dirname(json_path)
-        def get_path_from_root(path):
-            return dir_path + '/' + path
+        def get_path_from_root(path:str):
+            tmp_path = dir_path + '/' + path
+            return tmp_path.replace(r'/./', '/')
 
         with  open(json_path, 'r', encoding = 'UTF-8') as json_file:
             makefile_dict = jsonc.load(json_file)
@@ -504,7 +504,7 @@ class MakeFile:
                 for source in makefile_dict['source_file']:
                     obj_list.append(self.add_src(
                         get_path_from_root(source['path']),
-                        get_path_from_root(source['opt']),
+                        source['opt'],
                         get_path_from_root(source['obj_dir'])
                         ))
 

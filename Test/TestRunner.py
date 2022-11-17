@@ -66,17 +66,17 @@ def ExecMakeFileProcess(make_file, RunType):
     if RunType == 'Make':
         # The run type is 'Make'
         # Call Make function and save the status
-        isExeValid = (make_file.Make() == ExecutableStatus.EXECUTABLE_VALID)
+        isExeValid = (make_file.make() == ExecutableStatus.EXECUTABLE_VALID)
 
     elif RunType == 'Build':
         # The run type is 'Build'
         # Call Build function and save the status
-        isExeValid = (make_file.Build() == ExecutableStatus.EXECUTABLE_VALID)
+        isExeValid = (make_file.build() == ExecutableStatus.EXECUTABLE_VALID)
 
     elif RunType == 'Clear':
         # The run type is 'Clear'
         # Call Clear function
-        make_file.Clear()
+        make_file.clear()
 
         isExeValid = False
 
