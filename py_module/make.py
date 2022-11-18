@@ -12,7 +12,7 @@ from typing import List
 from typing import Tuple
 from typing import Optional
 import dataclasses
-from . import TimeStampComp
+from .timestamp_comp import TimestampComp, CompResult
 from . import jsonc
 
 # Return value of 'Makefile.Make' and 'Makefile.Build'
@@ -226,7 +226,7 @@ class MakeFile:
                     return True
 
             # Is the object files newest compared to all the relative files?
-            if TimeStampComp.IsTheFileLatest(object_file, related_file_list) is True:
+            if TimestampComp.is_the_file_latest(object_file, related_file_list) is True:
                 # Yes, the object file is up-to-date, skip the compiling.
                 return False
             # One of the relative file is updated. Compile the source file.

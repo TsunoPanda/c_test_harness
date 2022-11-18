@@ -21,7 +21,7 @@ class TableRow():
     """
     background_color: str        = '#000000'
     font_size:        str        = '1'
-    cells:            List[Cell] = field(default_factory = list)
+    cells:            List[Cell] = field(default_factory = list)  # type: ignore
 
 class EasyHtml:
     """
@@ -30,9 +30,9 @@ class EasyHtml:
 
     def __init__(self, tag:str = 'html') -> None:
         self.tag:str                 = tag
-        self.opt:str                 = None
-        self.text:str                = None
-        self.children:List[EasyHtml] = None
+        self.opt:str                 = ''
+        self.text:str                = ''
+        self.children:List[EasyHtml] = []
 
     def __set_option(self, option:str) -> None: # pylint: disable=unused-private-member
         self.opt = option
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     # Create the first row of the table
     top_row = TableRow(
         background_color  = '#FFFFFF',
-        font_size = 17,
+        font_size = '17',
         cells   =
         [
             Cell(text = 'this is first cell'),
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     # Create the second row of the table
     second_row = TableRow(
         background_color  = '#00AA00',
-        font_size = 17,
+        font_size = '17',
         cells   =
         [
             Cell(text = 'this is first cell of second row',

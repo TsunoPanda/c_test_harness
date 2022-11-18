@@ -3,7 +3,7 @@ import sys
 import os
 from py_module.make import MakeFile
 from py_module.make import ExecutableStatus
-import py_module.TimeStampComp
+from py_module.timestamp_comp import TimestampComp
 
 class BasicTest(unittest.TestCase):
     __BASE_DIR = './py_test/make_test'
@@ -27,7 +27,7 @@ class BasicTest(unittest.TestCase):
 
     def test_basic_000_clear(self):
         print('\n\n*********** Start Clear Test ************\n')
-        result = self.ext_instance.clear()
+        self.ext_instance.clear()
 
     def test_basic_001_make(self):
         print('\n\n*********** Start make Test ************\n')
@@ -56,7 +56,7 @@ class JsonReadTest(unittest.TestCase):
 
     def test_json_000_clear(self):
         print('\n\n*********** Start Clear Test ************\n')
-        result = self.ext_instance.clear()
+        self.ext_instance.clear()
 
     def test_json_001_make(self):
         print('\n\n*********** Start Make Test ************\n')
@@ -70,7 +70,7 @@ class JsonReadTest(unittest.TestCase):
 
     def test_json_003_onefile_modified_make(self):
         print('\n\n****Start only make updated files test.****\n')
-        py_module.TimeStampComp.ClearTimeStampDict()
+        TimestampComp.clear_time_stamp_dict()
         os.utime(path='./py_test/make_test/math/math.h', times=None)
         result = self.ext_instance.make()
         self.assertEqual(result, ExecutableStatus.EXECUTABLE_VALID)
