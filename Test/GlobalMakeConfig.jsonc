@@ -1,0 +1,14 @@
+{
+    /* Compiler specification */
+    "compiler": "g++",
+
+    "linker_option":
+    [
+        "-MMD", /* Make dependency file */
+        "-Wall",
+        "-O2",
+        "-fprofile-arcs",
+        "-ftest-coverage",
+        "-pthread"
+    ]
+}
