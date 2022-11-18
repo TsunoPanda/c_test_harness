@@ -15,7 +15,7 @@ class Cell:
     width:      str = ''
 
 @dataclass
-class TableRow():
+class TableRow:
     """
     This class is a data class which has parameters for the table row.
     """
@@ -174,43 +174,6 @@ class EasyHtml:
         """
         This method saves the html file at the input file path.
         """
-        with  open(file_path, 'w', encoding = 'UTF-8') as file_handle:
+        with open(file_path, 'w', encoding = 'UTF-8') as file_handle:
             file_handle.write('<!DOCTYPE html>' + "\n")
             self.__dump_data_as_html(file_handle, indent)
-
-if __name__ == '__main__':
-    test_html = EasyHtml()
-    test_html.set_title('this is the title')
-    test_html.set_body_h1('this is the body highlight 1', 'center')
-    test_html.set_body_h2('this is the body highlight 2', 'center')
-    test_html.set_body_h3('this is the body highlight 3', 'center')
-
-    # Create a table
-    test_table = test_html.create_table(5, 'center', '50%')
-
-    # Create the first row of the table
-    top_row = TableRow(
-        background_color  = '#FFFFFF',
-        font_size = '17',
-        cells   =
-        [
-            Cell(text = 'this is first cell'),
-            Cell(text = 'this is second cell'),
-        ],)
-    test_table.create_table_row(top_row)
-
-    # Create the second row of the table
-    second_row = TableRow(
-        background_color  = '#00AA00',
-        font_size = '17',
-        cells   =
-        [
-            Cell(text = 'this is first cell of second row',
-                       font_color = '#FFFFFF'),
-            Cell(text = 'this is second cell of second row',
-                       font_color = '#FFFFFF'),
-        ],)
-    test_table.create_table_row(second_row)
-
-    # Output the html file
-    test_html.output_html(4, 'test.html')

@@ -1,0 +1,27 @@
+{
+    /* This is a comment */
+    "string": "This is a test",
+
+    "number" : 3, // This is another comment
+
+    "array":
+    [
+        "Hello,", /* comment */
+        " ",
+        "World"
+    ],
+
+    /* Path should be written in relative form from the directory where this file is located */
+    "array_of_dict":
+    [
+        {
+            "string": "hello",
+            "number": 1
+        },
+
+        {
+            "string": "Hello",
+            "number": 2
+        }
+    ]
+}

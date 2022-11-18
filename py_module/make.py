@@ -12,8 +12,8 @@ from typing import List
 from typing import Tuple
 from typing import Optional
 import dataclasses
-from .timestamp_comp import TimestampComp, CompResult
-from . import jsonc
+from .timestamp_comp import TimestampComp # pylint: disable=relative-beyond-top-level
+from . import jsonc # pylint: disable=no-name-in-module
 
 # Return value of 'Makefile.Make' and 'Makefile.Build'
 class ExecutableStatus(Enum):

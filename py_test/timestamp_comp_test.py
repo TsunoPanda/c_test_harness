@@ -13,8 +13,8 @@ class BasicTest(unittest.TestCase):
         print(mtime2)
 
     def test_basic_001_file1_is_newer_than_file2(self):
-            self.assertEqual(TimestampComp.compare_timestamps(self.__EXT_FILE1, self.__EXT_FILE2),
-                             CompResult.FILE1_IS_NEWER)
+        self.assertEqual(TimestampComp.compare_timestamps(self.__EXT_FILE1, self.__EXT_FILE2),
+                            CompResult.FILE1_IS_NEWER)
 
     def test_basic_002_file1_is_the_newest(self):
         file_list = [self.__EXT_FILE1, self.__EXT_FILE2]
@@ -23,4 +23,3 @@ class BasicTest(unittest.TestCase):
     def test_basic_003_file2_is_the_oldest(self):
         file_list = [self.__EXT_FILE1, self.__EXT_FILE2]
         self.assertTrue(TimestampComp.is_the_file_oldest(self.__EXT_FILE2, file_list))
-
