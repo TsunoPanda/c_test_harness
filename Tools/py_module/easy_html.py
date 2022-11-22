@@ -13,6 +13,7 @@ class Cell:
     font_color: str = '#000000'
     align:      str = ''
     width:      str = ''
+    link:       str = ''
 
 @dataclass
 class TableRow:
@@ -20,7 +21,7 @@ class TableRow:
     This class is a data class which has parameters for the table row.
     """
     background_color: str        = '#000000'
-    font_size:        str        = '1'
+    font_size:        int        = 1
     cells:            List[Cell] = field(default_factory = list)  # type: ignore
 
 class EasyHtml:
@@ -39,6 +40,14 @@ class EasyHtml:
 
     def __set_text(self, text:str) -> None: # pylint: disable=unused-private-member
         self.text = text
+
+    def __set_link(self, text:str, link:str) -> None: # pylint: disable=unused-private-member
+        """
+        This method adds link to other contents
+        """
+        link_obj = self.__create_child('a')       # pylint: disable=protected-access
+        link_obj.__set_option('href = "' + link + '"') # pylint: disable=protected-access
+        link_obj.__set_text(text)                 # pylint: disable=protected-access
 
     def __create_child(self, tag:str) -> 'EasyHtml':
 
@@ -75,40 +84,52 @@ class EasyHtml:
 
         file_handle.write(space + '</' + self.tag + '>' + "\n")
 
-    def set_title(self, text:str) -> None:
+    def set_title(self, text:str, link:str ='') -> None:
         """
         This method adds a title text to the EasyHtml instance
         """
         head = self.__create_child('head')
         title = head.__create_child('title') # pylint: disable=protected-access
-        title.__set_text(text)               # pylint: disable=protected-access
+        if link == '':
+            title.__set_text(text) # pylint: disable=protected-access
+        else:
+            title.__set_link(text, link) # pylint: disable=protected-access
 
-    def set_body_h1(self, text:str, align:str) -> None:
+    def set_body_h1(self, text:str, align:str, link:str = '') -> None:
         """
         This method adds high light 1 text to the EasyHtml instance
         """
         body = self.__get_body()
         h1_title = body.__create_child('h1')      # pylint: disable=protected-access
         h1_title.__set_option('align = ' + align) # pylint: disable=protected-access
-        h1_title.__set_text(text)                 # pylint: disable=protected-access
+        if link == '':
+            h1_title.__set_text(text) # pylint: disable=protected-access
+        else:
+            h1_title.__set_link(text, link) # pylint: disable=protected-access
 
-    def set_body_h2(self, text:str, align:str) -> None:
+    def set_body_h2(self, text:str, align:str, link = '') -> None:
         """
         This method adds high light 2 text to the EasyHtml instance
         """
         body = self.__get_body()
         h2_title = body.__create_child('h2')      # pylint: disable=protected-access
         h2_title.__set_option('align = ' + align) # pylint: disable=protected-access
-        h2_title.__set_text(text)                 # pylint: disable=protected-access
+        if link == '':
+            h2_title.__set_text(text) # pylint: disable=protected-access
+        else:
+            h2_title.__set_link(text, link) # pylint: disable=protected-access
 
-    def set_body_h3(self, text:str, align:str) -> None:
+    def set_body_h3(self, text:str, align:str, link:str = '') -> None:
         """
         This method adds high light 3 text to the EasyHtml instance
         """
         body = self.__get_body()
-        h2_title = body.__create_child('h3')      # pylint: disable=protected-access
-        h2_title.__set_option('align = ' + align) # pylint: disable=protected-access
-        h2_title.__set_text(text)                 # pylint: disable=protected-access
+        h3_title = body.__create_child('h3')      # pylint: disable=protected-access
+        h3_title.__set_option('align = ' + align) # pylint: disable=protected-access
+        if link == '':
+            h3_title.__set_text(text) # pylint: disable=protected-access
+        else:
+            h3_title.__set_link(text, link) # pylint: disable=protected-access
 
     def create_table(self, border:int, align:str = '', width:str = '') -> 'EasyHtml':
         """
@@ -147,28 +168,27 @@ class EasyHtml:
         table_row.__set_option(option_str) # pylint: disable=protected-access
 
         for cell in table_row_param.cells:
-            table_row.create_table_cell(cell.text, # pylint: disable=protected-access
-                                       cell.font_color,
-                                       cell.align,
-                                       cell.width)
+            table_row.create_table_cell(cell) # pylint: disable=protected-access
         return table_row
 
-    def create_table_cell(self, text:str,
-                        font_color:str = '#000000', align:str = '', width:str = ''):
+    def create_table_cell(self, cell:Cell):
         """
         This method creates a table cell object in the table row instance and return the
         cell object.
         """
-        cell = self.__create_child('th')
+        cell_obj = self.__create_child('th')
         option_str = ''
-        if align != '':
-            option_str += (' align = ' + align)
-        if width != '':
-            option_str += (' width = "' + width + '"')
-        cell.__set_option(option_str) # pylint: disable=protected-access
-        cell_font = cell.__create_child('font') # pylint: disable=protected-access
-        cell_font.__set_option('color =' + font_color) # pylint: disable=protected-access
-        cell_font.__set_text(text) # pylint: disable=protected-access
+        if cell.align != '':
+            option_str += (' align = ' + cell.align)
+        if cell.width != '':
+            option_str += (' width = "' + cell.width + '"')
+        cell_obj.__set_option(option_str) # pylint: disable=protected-access
+        cell_font = cell_obj.__create_child('font') # pylint: disable=protected-access
+        cell_font.__set_option('color =' + cell.font_color) # pylint: disable=protected-access
+        if cell.link == '':
+            cell_font.__set_text(cell.text) # pylint: disable=protected-access
+        else:
+            cell_font.__set_link(text=cell.text, link=cell.link) # pylint: disable=protected-access
 
     def output_html(self, indent:int, file_path:str):
         """
