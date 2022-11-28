@@ -9,7 +9,15 @@ import dataclasses
 from enum import Enum
 from typing import List
 from typing import Dict
-from easy_html import EasyHtml, TableRow, Cell
+from py_module.easy_html import EasyHtml, TableRow, Cell
+
+class _MisraLineType(Enum):
+    # Violation Type
+    VIOLATION = 0
+    # Violation Code or any string other than cppcheck result message.
+    CODE      = 1
+    # End
+    END       = 2
 
 class MisraCheckReporter:
     '''
@@ -18,14 +26,6 @@ class MisraCheckReporter:
 
     __MISRA_C_2012_RULE_FILE = 'misra_c_2012_rules.json'
     __CPPCHECK_COMMAND       = 'cppcheck --addon=misra.py'
-
-    class _MisraLineType(Enum):
-        # Violation Type
-        VIOLATION = 0
-        # Violation Code or any string other than cppcheck result message.
-        CODE      = 1
-        # End
-        END       = 2
 
     class _MisraReportColor(Enum):
         TABLE_TOP      = '#A1C3E7'
@@ -37,25 +37,25 @@ class MisraCheckReporter:
     @dataclasses.dataclass
     class _LineInfo:
         # MISRA_LINE_TYPE_VIOLATION or MISRA_LINE_TYPE_CODE or MISRA_LINE_TYPE_END
-        line_type:        int             = None
+        line_type:        _MisraLineType  = _MisraLineType.VIOLATION
 
         # Path to the file where the violation was found
-        file_path:        str             = None
+        file_path:        str             = ''
 
         # Line where the violation was found
-        violation_line:   int             = None
+        violation_line:   int             = 0
 
         # Column where the violation was found
-        violation_column: int             = None
+        violation_column: int             = 0
 
         # Description of the rule which was violated
-        rule_messag:      str             = None
+        rule_messag:      str             = ''
 
         # Index of the rule
-        rule_idx:         str             = None
+        rule_idx:         str             = ''
 
         # The code which violates the rule
-        code:             str             = None
+        code:             str             = ''
 
     def __init__(self, code_folder_path:str):
         # A dictionary which contains MISRA C 2012 rule information.
@@ -71,7 +71,6 @@ class MisraCheckReporter:
         # ....... (same as above)
         # }
         self.__misra_rule: Dict[str, Dict[str, str]] = {}
-
         # A dictionary. key is the file path. and the value is
         # a list to the 'table_row' which contains violation
         # information
@@ -167,34 +166,22 @@ class MisraCheckReporter:
         # If it was the type violation
         if is_deviation_message is True:
             # Catch the violation information
-            c_line_info.line_type        = self._MisraLineType.VIOLATION
+            c_line_info.line_type        = _MisraLineType.VIOLATION
             c_line_info.file_path        = match_result.group(1)
-            c_line_info.violation_line   = match_result.group(2)
-            c_line_info.violation_column = match_result.group(3)
+            c_line_info.violation_line   = int(match_result.group(2))
+            c_line_info.violation_column = int( match_result.group(3))
             c_line_info.rule_messag      = match_result.group(4)
             c_line_info.rule_idx         = match_result.group(5)
-            c_line_info.code             = None
         # If it was the type end,
         elif is_message_end_line is True:
             # No information to return. just return the type end
-            c_line_info.line_type        = self._MisraLineType.END
-            c_line_info.file_path        = None
-            c_line_info.violation_line   = None
-            c_line_info.violation_column = None
-            c_line_info.rule_messag      = None
-            c_line_info.rule_idx         = None
-            c_line_info.code             = None
+            c_line_info.line_type        = _MisraLineType.END
         # If it was the type code.
         else:
             # Note: Any strings other than cppcheck result message
             #       will reach here.
             # Catch the code string
-            c_line_info.line_type        = self._MisraLineType.CODE
-            c_line_info.file_path        = None
-            c_line_info.violation_line   = None
-            c_line_info.violation_column = None
-            c_line_info.rule_messag      = None
-            c_line_info.rule_idx         = None
+            c_line_info.line_type        = _MisraLineType.CODE
             c_line_info.code             = line_str
 
         # Return the result
@@ -356,7 +343,7 @@ class MisraCheckReporter:
             c_line_analyzation_result = self.__analyze_message_line(line)
 
             # If it was the violation message,
-            if c_line_analyzation_result.line_type == self._MisraLineType.VIOLATION:
+            if c_line_analyzation_result.line_type == _MisraLineType.VIOLATION:
                 # Create a dictionary which contains the html detailed row
                 # table data
 
@@ -377,7 +364,7 @@ class MisraCheckReporter:
                     font_size = 14,
                     cells =
                     [
-                        Cell(c_line_analyzation_result.violation_line),
+                        Cell(str(c_line_analyzation_result.violation_line)),
                         # Cell for code. will be assigned later
                         Cell(align = 'left'),
                         Cell(c_line_analyzation_result.rule_idx),
@@ -388,7 +375,7 @@ class MisraCheckReporter:
 
             # If it was the code message,
             # (or any other string than cppcheck result message)
-            elif c_line_analyzation_result.line_type == self._MisraLineType.CODE:
+            elif c_line_analyzation_result.line_type == _MisraLineType.CODE:
                 # Check if dHtmlRowInfo exists
                 if 'c_table_row' not in locals():
                     # Not exists.
