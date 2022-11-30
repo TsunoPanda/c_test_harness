@@ -1,0 +1,38 @@
+{
+    "target" : "./Obj/LedDriverTest.exe",
+
+    "source_file":
+    [
+        /* Product Codes */
+        {
+            "path": "../../../ProductCode/LedDriver/LedDriver.c",
+            "opt" :
+            [ 
+                "-MMD",           /* Make dependency file */
+                "-Wall",
+                "-O0",            /* No optimization. Required for accurate coverage check. */
+                "-fprofile-arcs", /* For coverage check */
+                "-ftest-coverage" /* For coverage check */
+            ],
+            "obj_dir": "./Obj"
+        },
+
+        /* Test Codes */
+        {
+            "path": "./LedDriverTest.cpp",
+            "opt" : ["-MMD", "-Wall", "-O2"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./LedDriverTestRunner.cpp",
+            "opt" : ["-MMD", "-Wall", "-O2"],
+            "obj_dir": "./Obj"
+        }
+    ],
+
+    "include_path":
+    [
+        "../../../ProductCode/LedDriver/"
+    ]
+
+}
