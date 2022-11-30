@@ -1,6 +1,7 @@
 '''
 This module ...
 '''
+import os
 import sys
 import json
 import subprocess
@@ -34,8 +35,17 @@ class MisraCheckReporter:
         REQUIRED       = '#F8E9D1'
         MANDATORY      = '#F18D1D'
 
+    class _DetailedTableLine(Enum):
+        LINE       = 0
+        CODE       = 1
+        RULE_INDEX = 2
+        RULE_DESC  = 3
+        TYPE       = 4
+        DECIDABLE  = 5
+        CHECKED    = 6
+
     @dataclasses.dataclass
-    class _LineInfo:
+    class _DetailedTableCells:
         # MISRA_LINE_TYPE_VIOLATION or MISRA_LINE_TYPE_CODE or MISRA_LINE_TYPE_END
         line_type:        _MisraLineType  = _MisraLineType.VIOLATION
 
@@ -57,7 +67,7 @@ class MisraCheckReporter:
         # The code which violates the rule
         code:             str             = ''
 
-    def __init__(self, code_folder_path:str):
+    def __init__(self, code_folder_path:str, report_path:str):
         # A dictionary which contains MISRA C 2012 rule information.
         # The data structure is shown in below
         # 'rule index 1' :
@@ -91,6 +101,7 @@ class MisraCheckReporter:
         self.__mandatory_deviation_count:int = 0
 
         self.__product_code_path:str = code_folder_path
+        self.__report_path:str       = report_path
 
 
     def __execute_cppcheck_misra(self):
@@ -121,7 +132,7 @@ class MisraCheckReporter:
         # Return the list
         return whole_msg_lines
 
-    def __analyze_message_line(self, line_str:str) -> _LineInfo:
+    def __analyze_message_line(self, line_str:str) -> _DetailedTableCells:
         """Analyzes a line of the the cppcheck result massage
 
         This method checks the cppcheck output message line.
@@ -161,7 +172,7 @@ class MisraCheckReporter:
         is_message_end_line = (line_without_space == '^')
 
         # Define the return dictionary
-        c_line_info = self._LineInfo()
+        c_line_info = self._DetailedTableCells()
 
         # If it was the type violation
         if is_deviation_message is True:
@@ -186,19 +197,6 @@ class MisraCheckReporter:
 
         # Return the result
         return c_line_info
-
-    def __append_top_row_of_summary_table(self, table:EasyHtml, deviation_type:str, count:str):
-        """Appends the top row of the summary table
-        """
-        top_row = TableRow(
-            background_color  = self._MisraReportColor.TABLE_TOP.value,
-            font_size = 17,
-            cells   = [
-                Cell(text = deviation_type),
-                Cell(text = count),
-            ],
-        )
-        table.create_table_row(top_row)
 
     @staticmethod
     def __append_row_of_summary_table(table:EasyHtml, deviation_type:str, count:str, color:str):
@@ -230,9 +228,15 @@ class MisraCheckReporter:
         summary_table = report_html.create_table(5, 'center', '50%')
 
         # Append the top row to the table
-        self.__append_top_row_of_summary_table(summary_table,
-                                          'Type',
-                                          'Violation count')
+        top_row = TableRow(
+            background_color  = self._MisraReportColor.TABLE_TOP.value,
+            font_size = 17,
+            cells   = [
+                Cell(text = 'Type'),
+                Cell(text = 'Violation count'),
+            ],
+        )
+        summary_table.create_table_row(top_row)
 
         # Append the advisory violation count row to the table
         self.__append_row_of_summary_table(summary_table,
@@ -252,6 +256,7 @@ class MisraCheckReporter:
                                        str(self.__mandatory_deviation_count),
                                        self._MisraReportColor.MANDATORY.value)
 
+
     def __make_detailed_section(self, report_html:EasyHtml):
         """Makes the detailed table on the html
 
@@ -259,40 +264,128 @@ class MisraCheckReporter:
         referring the violation information captured from cppcheck
 
         """
+        def count_deviation(html_table:List[TableRow]):
+            advisory_count = 0
+            required_count = 0
+            mandatory_count = 0
+            for row in html_table:
+                type_cell = row.cells[self._DetailedTableLine.TYPE.value]
+                if type_cell.text == 'Advisory':
+                    advisory_count += 1
+                elif type_cell.text == 'Required':
+                    required_count += 1
+                elif type_cell.text == 'Mandatory':
+                    mandatory_count += 1
+                else:
+                    print('Unknow type detected.')
+                    sys.exit(1)
+            return (advisory_count, required_count, mandatory_count)
 
-        # List of the top row of the table
-        color = self._MisraReportColor.TABLE_TOP_FONT.value
-        top_row = TableRow(
-            background_color  = self._MisraReportColor.TABLE_TOP.value,
-            font_size = 17,
-            cells   =
-            [
-                Cell('Line',       color, '', '4%'),
-                Cell('Code',       color, '', '30%'),
-                Cell('Rule Index', color, '', '4%'),
-                Cell('Rule',       color, '', '50%'),
-                Cell('Type',       color, '', '6%'),
-                Cell('Decidable',  color, '', '6%'),
-            ],)
+        def append_file_table_row(file_table:List[TableRow], file_path, link):
+            detailed_table = self.__deviation_table[file_path]
+            advisory_count, required_count, mandatory_count = count_deviation(detailed_table)
+            row = TableRow(
+                background_color  = '#FFFFFF',
+                font_size = 14,
+                cells   = [
+                    Cell(text = file_path, link = link),
+                    Cell(text = str(advisory_count),
+                        font_color = '#0000FF'),
+                    Cell(text = str(required_count),
+                        font_color = '#00AA00'),
+                    Cell(text = str(mandatory_count),
+                            font_color = '#FF0000'),
+                    ],
+                )
+            file_table.create_table_row(row)
 
-        # Append all the detailed violation message to the table
-        for file_path in sorted(self.__deviation_table) :
+        def create_top_row_of_file_table(file_table):
+            top_row = TableRow(
+                background_color  = self._MisraReportColor.TABLE_TOP.value,
+                font_size = 17,
+                cells   = [
+                    Cell(text = 'File path', width = '55%'),
+                    Cell(text = 'Advisory count<br>(non-checked / whole)', width = '15%'),
+                    Cell(text = 'Required count<br>(non-checked / whole)', width = '15%'),
+                    Cell(text = 'Mandatory count<br>(non-checked / whole)', width = '15%'),
+                    ],
+                )
+            file_table.create_table_row(top_row)
+
+        def create_sub_html_file(file_path, out_file_name):
+            file_name = os.path.basename(file_path)
+            # List of the top row of the table
+            color = self._MisraReportColor.TABLE_TOP_FONT.value
+            top_row = TableRow(
+                background_color  = self._MisraReportColor.TABLE_TOP.value,
+                font_size = 17,
+                cells   =
+                [
+                    Cell('Line',       color, '', '4%'),
+                    Cell('Code',       color, '', '30%'),
+                    Cell('Rule Index', color, '', '4%'),
+                    Cell('Rule',       color, '', '50%'),
+                    Cell('Type',       color, '', '6%'),
+                    Cell('Decidable',  color, '', '6%'),
+                ],)
+
+            # Create a sub html object
+            report_per_file = EasyHtml(tag = file_name)
+
+            # Add back link to the index.html
+            report_per_file.set_body_h3('back', 'left', link = '000_index.html')
+
+            # Make detailed report table title
+            report_per_file.set_body_h2('Deviation Report: ' + file_path, 'center')
 
             # Make detailed report table
-            report_html.set_body_h2('Violation Report: ' + file_path, 'center')
-            # Make detailed report table
-            detailed_table = report_html.create_table(5, 'center', '95%')
+            detailed_table = report_per_file.create_table(5, 'center', '95%')
+
+            # Add top row of the table
             detailed_table.create_table_row(top_row)
 
             # Add all rows of the violation information
             for row in self.__deviation_table[file_path]:
                 detailed_table.create_table_row(row)
 
+            file_name = self.__report_path + '/' + out_file_name
+            report_per_file.output_html(4, file_name)
+
+        # Make deviation per files section
+        report_html.set_body_h2('Deviation files', 'center')
+
+        # Create deviation files table
+        file_table = report_html.create_table(5, 'center', '90%')
+
+        # Append the top row to the table
+        create_top_row_of_file_table(file_table)
+
+        # Initialize the file counter to be used for naming the sub html files.
+        file_count = 0
+
+        # Append all the detailed violation message to the table
+        for file_path in sorted(self.__deviation_table) :
+            file_count += 1
+
+            code_file_name = os.path.basename(file_path)
+
+            out_file_name = self.__sub_html_name(file_count, code_file_name)
+
+            # Add row of the deviation file table
+            append_file_table_row(file_table, file_path, out_file_name)
+
+            # Create sub html file
+            create_sub_html_file(file_path, out_file_name)
+
+    @staticmethod
+    def __sub_html_name(file_count, file_name):
+        return str(file_count).zfill(3) + '_' + file_name + '.html'
+
     def __sort_deviation_table(self):
         """Sorts the violation table by code line
         """
         def sort_key(table_row:TableRow):
-            return table_row.cells[0].text.zfill(10)
+            return table_row.cells[self._DetailedTableLine.LINE.value].text.zfill(10)
 
         for key in self.__deviation_table:
             self.__deviation_table[key] = sorted(self.__deviation_table[key],
@@ -384,7 +477,8 @@ class MisraCheckReporter:
                     continue
 
                 # Save the code string to the dictionary
-                c_table_row.cells[1].text = c_line_analyzation_result.code
+                code = self._DetailedTableLine.CODE.value
+                c_table_row.cells[code].text = c_line_analyzation_result.code
 
             # If it was the end message,
             else :  # dLineAnalyzeResult['lineType'] == MISRA_LINE_TYPE_END
@@ -396,7 +490,7 @@ class MisraCheckReporter:
                     continue
 
                 # Save rule index into the local variable
-                rule_idx = c_table_row.cells[2].text
+                rule_idx = c_table_row.cells[self._DetailedTableLine.RULE_INDEX.value].text
 
                 # If it was the advisory violation,
                 if self.__misra_rule[rule_idx]['Type'] == 'Advisory' :
@@ -434,7 +528,7 @@ class MisraCheckReporter:
         self.__required_deviation_count  = required_deviation_count
         self.__mandatory_deviation_count = mandatory_deviation_count
 
-    def make_html_report(self, out_html_path:str):
+    def make_html_report(self, out_html:str):
         """Makes a html report
 
         This method makes a html report as referring the previous
@@ -443,6 +537,7 @@ class MisraCheckReporter:
         """
         # Sort the violation information by line
         self.__sort_deviation_table()
+
         # Make reporting html file
         report_html = EasyHtml()
 
@@ -455,19 +550,22 @@ class MisraCheckReporter:
         # Make summary section
         self.__make_report_summary_section(report_html)
 
+        # Make sub summary section
+        #self.__make_report_file_info_section(report_html)
+
         # Make detailed report section
         self.__make_detailed_section(report_html)
 
         # output the html
-        report_html.output_html(4, out_html_path)
+        report_html.output_html(4, self.__report_path +'/'+ out_html)
 
 
 if __name__ == '__main__':
 
     code_path    = sys.argv[1]
-    out_file_path = sys.argv[2]
+    out_dir_path = sys.argv[2]
 
-    reporter = MisraCheckReporter(code_path)
+    reporter = MisraCheckReporter(code_path, out_dir_path)
 
     # At first, load the Misra C rule information
     reporter.get_misra_rule_dictionary()
@@ -476,4 +574,4 @@ if __name__ == '__main__':
     reporter.cpp_check()
 
     # Output the report as html style
-    reporter.make_html_report(out_file_path)
+    reporter.make_html_report('000_index.html')
