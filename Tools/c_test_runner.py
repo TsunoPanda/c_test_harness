@@ -1,3 +1,5 @@
+''' This script runs the c code test.
+'''
 import os
 import sys
 import subprocess
@@ -14,19 +16,21 @@ __TEST_HARNESS_CONFIG_FILE = 'MakeConfig.jsonc'
 __TEST_LOG_DIR             = __TEST_BASE_PATH+'/Log'
 
 def check_file_dir_existance(dir_path:str):
-    """_summary_
+    ''' This function shut down this script if the directory
+    pointed by the input path does not exist.
 
     Args:
-        dir_path (str): _description_
-    """
+        dir_path (str): The directory path to be checked
+    '''
+
     if not os.path.exists(dir_path):
         # It did not exist.
         print(f'Could not find the {dir_path}')
         sys.exit(1)
 
 def get_harness_config_path() -> str:
-    """_summary_
-    """
+    ''' This function returns the path to the configuration file of the test harness
+    '''
     harness_config_path = f'{__TEST_HARNESS_PATH}/{__TEST_HARNESS_CONFIG_FILE}'
 
     check_file_dir_existance(harness_config_path)
@@ -34,11 +38,12 @@ def get_harness_config_path() -> str:
     return harness_config_path
 
 def get_the_test_config_path(test_module_in:str) -> str:
-    """_summary_
+    ''' This function returns the path to the configuration file of
+        the test module pointed by input directory path
 
     Args:
-        TestModule (str): _description_
-    """
+        test_module_in (str): The path to the directory which has the module to be tested
+    '''
     # Make the local make configuration file path
     test_config_path = f'{__TEST_CODE_PATH}/{test_module_in}/{__TEST_CODE_CONFIG_FILE}'
 
@@ -50,6 +55,9 @@ def get_the_test_config_path(test_module_in:str) -> str:
 def check_input_run_type(run_type_in:str):
     ''' This function checks the validity of input run type.
         If it is not valid, stops this program with error message.
+
+    Args:
+        run_type_in (str): run type such as 'Make', 'Build', etc.
     '''
 
     # Is input run type valid?
@@ -65,7 +73,7 @@ def check_input_run_type(run_type_in:str):
 def execute_makefile_process(in_make_file:MakeFile, run_type_in:str):
     ''' This function executes make process according to the input run type.
         And return the compile state and clear state.
-     '''
+    '''
 
     is_exe_valid_tmp = False
 
