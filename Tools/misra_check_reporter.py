@@ -1,5 +1,5 @@
 '''
-This module ...
+This module create html files which reports deviation of misra c in several files
 '''
 import os
 import sys
@@ -8,8 +8,11 @@ import subprocess
 import re
 import dataclasses
 from enum import Enum
-from typing import List
-from typing import Dict
+import tkinter
+from tkinter import Tk, StringVar
+from tkinter import filedialog
+from tkinter import ttk
+from tkinter import messagebox
 from py_module.easy_html import EasyHtml, TableRow, Cell
 
 class _MisraLineType(Enum):
@@ -20,7 +23,269 @@ class _MisraLineType(Enum):
     # End
     END       = 2
 
+class _MisraReportColor(Enum):
+    TABLE_TOP       = '#FFFABB'
+    TABLE_TOP_FONT  = '#000000'
+    NO_PROBLEM      = '#D3ECF3'
+    WARNING         = '#FBE5E7'
+    NO_PROBLEM_FONT = '#FF0000'
+    WARNING_FONT    = '#0000FF'
+
+class _FileListTableRow(TableRow):
+    ''' This class represents row of the file list table in the html report.
+    '''
+    __CELL_IDX_FILE_PATH           = 0
+    __CELL_IDX_ADV_CNT             = 1
+    __CELL_IDX_REQ_CHECKED_CNT     = 2
+    __CELL_IDX_REQ_NOT_CHECKED_CNT = 3
+    __CELL_IDX_MAN_CNT             = 4
+
+    def __init__(self):
+        self.background_color = '#FFFFFF'
+        self.font_size = 14
+        self.cells = [
+            Cell(), # File path
+            Cell(), # Advisory deviation count
+            Cell(), # Required checked deviation count
+            Cell(), # Required not checked deviation count
+            Cell(), # Mandatory deviation count
+            ]
+
+    def set_top_row_param(self):
+        ''' This method set the top row parameter
+        '''
+        font_color = _MisraReportColor.TABLE_TOP_FONT.value
+        self.background_color  = _MisraReportColor.TABLE_TOP.value
+        self.font_size = 17
+        self.cells   = [
+            Cell(text = 'File path', font_color = font_color),
+            Cell(text = 'Advisory count', font_color = font_color),
+            Cell(text = 'Required count<br>Checked', font_color = font_color),
+            Cell(text = 'Required count<br>Not checked', font_color = font_color),
+            Cell(text = 'Mandatory count', font_color = font_color),
+        ]
+
+    def set_file_path(self, file_path:str, link:str):
+        ''' This method set the "file path" and "link" of the file path cell of the row
+        '''
+        cell_idx = self.__CELL_IDX_FILE_PATH
+        self.cells[cell_idx].text = file_path
+        self.cells[cell_idx].link = link
+
+    def set_advisory_count(self, count:int):
+        ''' This method set the count of the "advisory count" cell of the row
+        '''
+        cell_idx = self.__CELL_IDX_ADV_CNT
+        self.cells[cell_idx].text = str(count)
+        self.cells[cell_idx].font_color = _MisraReportColor.NO_PROBLEM_FONT.value
+
+    def set_required_checked_count(self, count:int):
+        ''' This method set the count of the "required checked" cell of the row
+        '''
+        cell_idx = self.__CELL_IDX_REQ_CHECKED_CNT
+        self.cells[cell_idx].text = str(count)
+        self.cells[cell_idx].font_color = _MisraReportColor.NO_PROBLEM_FONT.value
+
+    def set_required_not_checked_count(self, count:int):
+        ''' This method set the count of the "required not checked" cell of the row
+        '''
+        cell_idx = self.__CELL_IDX_REQ_NOT_CHECKED_CNT
+        self.cells[cell_idx].text = str(count)
+        self.cells[cell_idx].font_color = _MisraReportColor.WARNING_FONT.value
+
+    def set_mandatory_count(self, count:int):
+        ''' This method set the count of the "mandatory" cell of the row
+        '''
+        cell_idx = self.__CELL_IDX_MAN_CNT
+        self.cells[cell_idx].text = str(count)
+        self.cells[cell_idx].font_color = _MisraReportColor.WARNING_FONT.value
+
+class _SummaryTableRow(TableRow):
+    ''' This class represents row of the summary table in the html report.
+    '''
+    __CELL_IDX_TYPE  = 0
+    __CELL_IDX_COUNT = 1
+
+    def __init__(self):
+        self.background_color = '#FFFFFF'
+        self.font_size = 14
+        self.cells = [
+            Cell(), # Type
+            Cell(), # Deviation count
+            ]
+
+    def set_top_row_param(self):
+        ''' This method setups the top row parameter
+        '''
+        font_color = _MisraReportColor.TABLE_TOP_FONT.value
+        self.background_color  = _MisraReportColor.TABLE_TOP.value
+        self.font_size = 17
+        self.cells   = [
+            Cell(text = 'Type', font_color = font_color),
+            Cell(text = 'Deviation count', font_color = font_color),
+        ]
+
+    def set_advisory_row_param(self, count:int):
+        ''' This method sets the advisory count row parameter
+        '''
+        self.background_color  = _MisraReportColor.NO_PROBLEM.value
+        self.font_size = 14
+        self.cells   = [
+            Cell(text = 'Advisory'),
+            Cell(text = str(count)),
+        ]
+
+    def set_required_checked_row_param(self, count:int):
+        ''' This method sets the required checked count row parameter
+        '''
+        self.background_color  = _MisraReportColor.NO_PROBLEM.value
+        self.font_size = 14
+        self.cells   = [
+            Cell(text = 'Required checked'),
+            Cell(text = str(count)),
+        ]
+
+    def set_required_not_checked_row_param(self, count:int):
+        ''' This method sets the required not-checked count row parameter
+        '''
+        self.background_color  = _MisraReportColor.WARNING.value
+        self.font_size = 14
+        self.cells   = [
+            Cell(text = 'Required not checked'),
+            Cell(text = str(count)),
+        ]
+
+    def set_mandatory_row_param(self, count:int):
+        ''' This method sets the mandatory count row parameter
+        '''
+        self.background_color  = _MisraReportColor.WARNING.value
+        self.font_size = 14
+        self.cells   = [
+            Cell(text = 'Mandatory'),
+            Cell(text = str(count)),
+        ]
+
+class _DetailedTableRow(TableRow):
+    ''' This class represents row of the detailed table in the html report.
+    '''
+    __CELL_IDX_LINE       = 0
+    __CELL_IDX_CODE       = 1
+    __CELL_IDX_RULE_INDEX = 2
+    __CELL_IDX_RULE_DESC  = 3
+    __CELL_IDX_TYPE       = 4
+    __CELL_IDX_CHECKED    = 5
+
+    __CHECKED_MARKER         = 'Yes'
+    __NOT_CHECKED_MARKER     = 'No'
+    __NO_NEED_CHECKED_MARKER = '-'
+
+    def __init__(self):
+        self.background_color = '#FFFFFF'
+        self.font_size = 14
+        self.cells = [
+            Cell(), # Deviation line
+            Cell(), # Code
+            Cell(), # Rule index
+            Cell(), # Rule
+            Cell(), # Type
+            Cell(), # Checked
+        ]
+
+    def set_top_row_param(self):
+        ''' This method setups the top row parameter
+        '''
+        font_color = _MisraReportColor.TABLE_TOP_FONT.value
+        self.background_color  = _MisraReportColor.TABLE_TOP.value
+        self.font_size = 17
+        self.cells   = [
+            Cell('Line',       font_color, '', '4%'),
+            Cell('Code',       font_color, '', '30%'),
+            Cell('Rule Index', font_color, '', '4%'),
+            Cell('Rule',       font_color, '', '50%'),
+            Cell('Type',       font_color, '', '6%'),
+            Cell('Checked',    font_color, '', '6%'),
+            ]
+
+    def set_line(self, line:int):
+        ''' This method sets the line cell string
+        '''
+        self.cells[self.__CELL_IDX_LINE].text = str(line)
+
+    def get_line(self):
+        ''' This method gets the line cell string
+        '''
+        return self.cells[self.__CELL_IDX_LINE].text
+
+    def set_code(self, code:str):
+        ''' This method gets the code cell string
+        '''
+        self.cells[self.__CELL_IDX_CODE].text = code
+
+    def set_code_align_left(self):
+        ''' This method sets the code cell's align
+        '''
+        self.cells[self.__CELL_IDX_CODE].align = 'left'
+
+    def set_rule_index(self, rule_idx:str):
+        ''' This method sets the rule index cell's string
+        '''
+        self.cells[self.__CELL_IDX_RULE_INDEX].text = rule_idx
+
+    def set_rule(self, rule:str):
+        ''' This method sets the rule cell's string
+        '''
+        self.cells[self.__CELL_IDX_RULE_DESC].text = rule
+
+    def set_rule_align_left(self):
+        ''' This method sets the rule cell's align
+        '''
+        self.cells[self.__CELL_IDX_RULE_DESC].align = 'left'
+
+    def set_type(self, misra_type:str):
+        ''' This method sets the type cell's align
+        '''
+        self.cells[self.__CELL_IDX_TYPE].text = misra_type
+
+    def get_type(self) -> str:
+        ''' This method gets the type cell's align
+        '''
+        return self.cells[self.__CELL_IDX_TYPE].text
+
+    def set_checked(self):
+        ''' This method sets the checked cell as "checked"
+        '''
+        self.cells[self.__CELL_IDX_CHECKED].text = self.__CHECKED_MARKER
+
+    def set_not_checked(self):
+        ''' This method sets the checked cell as "not checked"
+        '''
+        self.cells[self.__CELL_IDX_CHECKED].text = self.__NOT_CHECKED_MARKER
+
+    def set_no_need_to_be_checked(self):
+        ''' This method sets the checked cell as "no need to be checked"
+        '''
+        self.cells[self.__CELL_IDX_CHECKED].text = self.__NO_NEED_CHECKED_MARKER
+
+    def set_color(self, bg_color:str):
+        ''' This method sets the background color of the row
+        '''
+        self.background_color = bg_color
+
+    def set_font_size(self, font_size:int):
+        ''' This method sets the fond size of the row "no need to be checked"
+        '''
+        self.font_size = font_size
+
+    def is_checked(self):
+        ''' This method returns "True" if the deviation has been marked as 'checked'.
+        '''
+        if self.cells[self.__CELL_IDX_CHECKED].text == self.__CHECKED_MARKER:
+            return True
+        return False
+
+
 class MisraCheckReporter:
+    # pylint: disable=too-many-instance-attributes
     '''
     This class
     '''
@@ -28,22 +293,13 @@ class MisraCheckReporter:
     __MISRA_C_2012_RULE_FILE = 'misra_c_2012_rules.json'
     __CPPCHECK_COMMAND       = 'cppcheck --addon=misra.py'
 
-    class _MisraReportColor(Enum):
-        TABLE_TOP      = '#FFFABB'
-        TABLE_TOP_FONT = '#000000'
-        NO_PROBLEM     = '#D3ECF3'
-        WARNING        = '#FBE5E7'
-
-    class _DetailedTableLine(Enum):
-        LINE       = 0
-        CODE       = 1
-        RULE_INDEX = 2
-        RULE_DESC  = 3
-        TYPE       = 4
-        CHECKED    = 5
+    # Note: These string has to match with the string in .json file.
+    __TYPE_ADVISORY_JSON_STR = 'Advisory'
+    __TYPE_REQUIRED_JSON_STR = 'Required'
+    __TYPE_MANDATORY_JSON_STR = 'Mandatory'
 
     @dataclasses.dataclass
-    class _DetailedTableCells:
+    class _MessageAnalyzeResult:
         # pylint: disable=too-many-instance-attributes
         # MISRA_LINE_TYPE_VIOLATION or MISRA_LINE_TYPE_CODE or MISRA_LINE_TYPE_END
         line_type:        _MisraLineType  = _MisraLineType.VIOLATION
@@ -70,6 +326,8 @@ class MisraCheckReporter:
         comment:          str             = ''
 
     def __init__(self, code_folder_path:str, report_path:str):
+        #pylint: disable=unsubscriptable-object
+
         # A dictionary which contains MISRA C 2012 rule information.
         # The data structure is shown in below
         # 'rule index 1' :
@@ -82,7 +340,10 @@ class MisraCheckReporter:
         # {
         # ....... (same as above)
         # }
-        self.__misra_rule: Dict[str, Dict[str, str]] = {}
+        self.__misra_rule: dict[str, dict[str, str]] = {}
+
+
+
         # A dictionary. key is the file path. and the value is
         # a list to the 'table_row' which contains violation
         # information
@@ -91,7 +352,7 @@ class MisraCheckReporter:
         #    table_row2,
         #    ....
         # ]
-        self.__deviation_table: Dict[str, List[TableRow]] = {}
+        self.__deviation_table: dict[str, list[_DetailedTableRow]] = {}
 
         # Violation amount of type 'advisory'
         self.__advisory_deviation_count:int = 0
@@ -137,7 +398,7 @@ class MisraCheckReporter:
         # Return the list
         return whole_msg_lines
 
-    def __analyze_message_line(self, line_str:str) -> _DetailedTableCells:
+    def __analyze_message_line(self, line_str:str) -> _MessageAnalyzeResult:
         """Analyzes a line of the the cppcheck result massage
 
         This method checks the cppcheck output message line.
@@ -179,7 +440,7 @@ class MisraCheckReporter:
         is_message_end_line = (line_without_space == '^')
 
         # Define the return dictionary
-        c_line_info = self._DetailedTableCells()
+        c_line_info = self._MessageAnalyzeResult()
 
         # If it was the type violation
         if is_deviation_message is True:
@@ -209,21 +470,6 @@ class MisraCheckReporter:
         # Return the result
         return c_line_info
 
-    @staticmethod
-    def __append_row_of_summary_table(table:EasyHtml, deviation_type:str, count:str, color:str):
-        """Appends a row of the summary table
-        """
-
-        row = TableRow(
-            background_color  = color,
-            font_size = 14,
-            cells   = [
-                Cell(text = deviation_type),
-                Cell(text = count),
-            ],
-        )
-        row = table.create_table_row(row)
-
     def __make_report_summary_section(self, report_html:EasyHtml):
         """Makes a summary table on the html
 
@@ -239,41 +485,29 @@ class MisraCheckReporter:
         summary_table = report_html.create_table(5, 'center', '50%')
 
         # Append the top row to the table
-        font_color = self._MisraReportColor.TABLE_TOP_FONT.value
-        top_row = TableRow(
-            background_color  = self._MisraReportColor.TABLE_TOP.value,
-            font_size = 17,
-            cells   = [
-                Cell(text = 'Type', font_color = font_color),
-                Cell(text = 'Violation count', font_color = font_color),
-            ],
-        )
+        top_row = _SummaryTableRow()
+        top_row.set_top_row_param()
         summary_table.create_table_row(top_row)
 
         # Append the advisory violation count row to the table
-        self.__append_row_of_summary_table(summary_table,
-                                       'Advisory',
-                                       str(self.__advisory_deviation_count),
-                                       self._MisraReportColor.NO_PROBLEM.value)
+        row = _SummaryTableRow()
+        row.set_advisory_row_param(self.__advisory_deviation_count)
+        summary_table.create_table_row(row)
 
         # Append the required violation row to the table
-        self.__append_row_of_summary_table(summary_table,
-                                       'Required checked',
-                                       str(self.__required_checked_deviation_count),
-                                       self._MisraReportColor.NO_PROBLEM.value)
+        row = _SummaryTableRow()
+        row.set_required_checked_row_param(self.__required_checked_deviation_count)
+        summary_table.create_table_row(row)
 
         # Append the required violation row to the table
-        self.__append_row_of_summary_table(summary_table,
-                                       'Required not checked',
-                                       str(self.__required_not_checked_deviation_count),
-                                       self._MisraReportColor.WARNING.value)
+        row = _SummaryTableRow()
+        row.set_required_not_checked_row_param(self.__required_not_checked_deviation_count)
+        summary_table.create_table_row(row)
 
         # Append the mandatory violation row to the table
-        self.__append_row_of_summary_table(summary_table,
-                                       'Mandatory',
-                                       str(self.__mandatory_deviation_count),
-                                       self._MisraReportColor.WARNING.value)
-
+        row = _SummaryTableRow()
+        row.set_mandatory_row_param(self.__mandatory_deviation_count)
+        summary_table.create_table_row(row)
 
     def __make_detailed_section(self, report_html:EasyHtml):
         """Makes the detailed table on the html
@@ -282,82 +516,49 @@ class MisraCheckReporter:
         referring the violation information captured from cppcheck
 
         """
-        def count_deviation(html_table:List[TableRow]):
+
+        #pylint: disable=unsubscriptable-object
+        def count_deviation(html_table:list[_DetailedTableRow]):
+
             advisory_count = 0
             required_not_checked_count = 0
             required_checked_count = 0
             mandatory_count = 0
             for row in html_table:
-                type_cell = row.cells[self._DetailedTableLine.TYPE.value]
-                checked_cell = row.cells[self._DetailedTableLine.CHECKED.value]
-                if type_cell.text == 'Advisory':
+                if row.get_type() == self.__TYPE_ADVISORY_JSON_STR:
                     advisory_count += 1
-                elif type_cell.text == 'Required':
-                    if(checked_cell.text == 'Yes'):
+                elif row.get_type() == self.__TYPE_REQUIRED_JSON_STR:
+                    if row.is_checked():
                         required_checked_count += 1
                     else:
                         required_not_checked_count += 1
-                elif type_cell.text == 'Mandatory':
+                elif row.get_type() == self.__TYPE_MANDATORY_JSON_STR:
                     mandatory_count += 1
                 else:
                     print('Unknow type detected.')
                     sys.exit(1)
-            return (advisory_count, required_checked_count, required_not_checked_count, mandatory_count)
+            return (advisory_count, required_checked_count,
+                    required_not_checked_count, mandatory_count)
 
-        def append_file_table_row(file_table:List[TableRow], file_path, link):
+        def append_file_table_row(file_table, file_path, link):
             detailed_table = self.__deviation_table[file_path]
             [advisory_count,
              required_checked_count,
              required_not_checked_count,
              mandatory_count] = count_deviation(detailed_table)
-            row = TableRow(
-                background_color  = '#FFFFFF',
-                font_size = 14,
-                cells   = [
-                    Cell(text = file_path, link = link),
-                    Cell(text = str(advisory_count),
-                        font_color = '#0000FF'),
-                    Cell(text = str(required_checked_count),
-                        font_color = '#0000FF'),
-                    Cell(text = str(required_not_checked_count),
-                            font_color = '#FF0000'),
-                    Cell(text = str(mandatory_count),
-                            font_color = '#FF0000'),
-                    ],
-                )
+            row = _FileListTableRow()
+            row.set_file_path(file_path,link)
+            row.set_advisory_count(advisory_count)
+            row.set_required_checked_count(required_checked_count)
+            row.set_required_not_checked_count(required_not_checked_count)
+            row.set_mandatory_count(mandatory_count)
             file_table.create_table_row(row)
-
-        def create_top_row_of_file_table(file_table):
-            font_color = self._MisraReportColor.TABLE_TOP_FONT.value
-            top_row = TableRow(
-                background_color  = self._MisraReportColor.TABLE_TOP.value,
-                font_size = 17,
-                cells   = [
-                    Cell(text = 'File path', font_color = font_color, width = '56%',),
-                    Cell(text = 'Advisory count', font_color = font_color, width = '10%'),
-                    Cell(text = 'Required count<br>Checked', font_color = font_color, width = '12%'),
-                    Cell(text = 'Required count<br>Not checked', font_color = font_color, width = '12%'),
-                    Cell(text = 'Mandatory count', font_color = font_color, width = '10%'),
-                    ],
-                )
-            file_table.create_table_row(top_row)
 
         def create_sub_html_file(file_path, out_file_name):
             file_name = os.path.basename(file_path)
             # List of the top row of the table
-            color = self._MisraReportColor.TABLE_TOP_FONT.value
-            top_row = TableRow(
-                background_color  = self._MisraReportColor.TABLE_TOP.value,
-                font_size = 17,
-                cells   =
-                [
-                    Cell('Line',       color, '', '4%'),
-                    Cell('Code',       color, '', '30%'),
-                    Cell('Rule Index', color, '', '4%'),
-                    Cell('Rule',       color, '', '50%'),
-                    Cell('Type',       color, '', '6%'),
-                    Cell('Checked',    color, '', '6%'),
-                ],)
+            top_row = _DetailedTableRow()
+            top_row.set_top_row_param()
 
             # Create a sub html object
             report_per_file = EasyHtml(tag = file_name)
@@ -388,7 +589,10 @@ class MisraCheckReporter:
         file_table = report_html.create_table(5, 'center', '90%')
 
         # Append the top row to the table
-        create_top_row_of_file_table(file_table)
+        top_row = _FileListTableRow()
+        top_row.set_top_row_param()
+        file_table.create_table_row(top_row)
+
 
         # Initialize the file counter to be used for naming the sub html files.
         file_count = 0
@@ -414,8 +618,8 @@ class MisraCheckReporter:
     def __sort_deviation_table(self):
         """Sorts the violation table by code line
         """
-        def sort_key(table_row:TableRow):
-            return table_row.cells[self._DetailedTableLine.LINE.value].text.zfill(10)
+        def sort_key(table_row:_DetailedTableRow):
+            return table_row.get_line().zfill(10)
 
         for key in self.__deviation_table:
             self.__deviation_table[key] = sorted(self.__deviation_table[key],
@@ -435,6 +639,43 @@ class MisraCheckReporter:
             # Load the json file and save it into a dictionary data
             self.__misra_rule = json.load(misra_rule_raw_json_file)
 
+    def __create_detailed_table(self,
+                                analyze_result:_MessageAnalyzeResult) -> _DetailedTableRow:
+        rule_idx  = analyze_result.rule_idx
+        c_table_row = _DetailedTableRow()
+        c_table_row.set_code_align_left()
+        c_table_row.set_rule_align_left()
+        c_table_row.set_line(analyze_result.violation_line)
+        c_table_row.set_rule_index(rule_idx)
+        c_table_row.set_rule(self.__misra_rule[rule_idx]['Rule'])
+        c_table_row.set_type(self.__misra_rule[rule_idx]['Type'])
+        return c_table_row
+
+    def __add_detailed_table_code_info(self, c_table_row: _DetailedTableRow,
+                                       analyze_result:_MessageAnalyzeResult):
+
+        is_required_deviation_checked = (analyze_result.comment != '')
+
+        c_table_row.set_code(analyze_result.code)
+
+        if c_table_row.get_type() == self.__TYPE_ADVISORY_JSON_STR:
+            self.__advisory_deviation_count += 1
+            c_table_row.set_no_need_to_be_checked()
+            c_table_row.set_color(_MisraReportColor.NO_PROBLEM.value)
+        elif c_table_row.get_type() == self.__TYPE_REQUIRED_JSON_STR:
+            if is_required_deviation_checked:
+                self.__required_checked_deviation_count += 1
+                c_table_row.set_checked()
+                c_table_row.set_color(_MisraReportColor.NO_PROBLEM.value)
+            else:
+                self.__required_not_checked_deviation_count += 1
+                c_table_row.set_not_checked()
+                c_table_row.set_color(_MisraReportColor.WARNING.value)
+        else: # if c_table_row.get_type() == self. __TYPE_MANDATORY_JSON_STR
+            self.__mandatory_deviation_count += 1
+            c_table_row.set_no_need_to_be_checked()
+            c_table_row.set_color(_MisraReportColor.WARNING.value)
+
     def cpp_check(self):
         """Executes the cppcheck and analyze the result message
 
@@ -444,18 +685,6 @@ class MisraCheckReporter:
         dictionary variable
 
         """
-
-        # Counter of advisory violations
-        advisory_deviation_count  = 0
-
-        # Counter of required violations
-        required_checked_deviation_count  = 0
-
-        # Counter of required violations
-        required_not_checked_deviation_count  = 0
-
-        # Counter of mandatory violations
-        mandatory_deviation_count = 0
 
         # Execute the cppcheck(misra.py) and get the result as a list of
         # message line
@@ -470,33 +699,15 @@ class MisraCheckReporter:
 
             # If it was the violation message,
             if c_line_analyzation_result.line_type == _MisraLineType.VIOLATION:
-                # Create a dictionary which contains the html detailed row
-                # table data
+                # Create a dictionary which contains the html detailed row table data
 
-                # Save the file path
+                # Create new deviation table
                 file_path = c_line_analyzation_result.file_path
-
-                # Get the violation information
-                rule_idx = c_line_analyzation_result.rule_idx
-                rule = self.__misra_rule[rule_idx]['Rule']
-                rule_type = self.__misra_rule[rule_idx]['Type']
                 if file_path not in self.__deviation_table:
                     self.__deviation_table[file_path] = []
 
-                c_table_row = TableRow(
-                    background_color = '',  # will be assigned later
-                    font_size = 14,
-                    cells =
-                    [
-                        Cell(str(c_line_analyzation_result.violation_line)),
-                        # Cell for code. will be assigned later
-                        Cell(align = 'left'),
-                        Cell(c_line_analyzation_result.rule_idx),
-                        Cell(rule, align = 'left'),
-                        Cell(rule_type),
-                        # Cell for "checked" will be assigned later
-                        Cell(''),
-                    ],)
+                # Create new c table row
+                c_table_row = self.__create_detailed_table(c_line_analyzation_result)
 
             # If it was the code message,
             # (or any other string than cppcheck result message)
@@ -508,16 +719,8 @@ class MisraCheckReporter:
                     # Skip and check next line
                     continue
 
-                # Save the code string to the dictionary
-                code = self._DetailedTableLine.CODE.value
-                c_table_row.cells[code].text = c_line_analyzation_result.code
-                if c_table_row.cells[self._DetailedTableLine.TYPE.value].text == 'Required':
-                    if c_line_analyzation_result.comment == '':
-                        c_table_row.cells[self._DetailedTableLine.CHECKED.value].text = 'No'
-                    else:
-                        c_table_row.cells[self._DetailedTableLine.CHECKED.value].text = 'Yes'
-                else:
-                    c_table_row.cells[self._DetailedTableLine.CHECKED.value].text = '-'
+                # Save the code string to the table
+                self.__add_detailed_table_code_info(c_table_row, c_line_analyzation_result)
 
 
             # If it was the end message,
@@ -529,50 +732,12 @@ class MisraCheckReporter:
                     # Skip and check next line
                     continue
 
-                # Save rule index into the local variable
-                rule_idx = c_table_row.cells[self._DetailedTableLine.RULE_INDEX.value].text
-
-                # If it was the advisory violation,
-                if self.__misra_rule[rule_idx]['Type'] == 'Advisory' :
-                    # Increment the counter
-                    advisory_deviation_count += 1
-                    # Set the background color of the html table row as
-                    # 'advisory color'
-                    c_table_row.background_color = self._MisraReportColor.NO_PROBLEM.value
-
-                # If it was the required violation,
-                elif self.__misra_rule[rule_idx]['Type'] == 'Required' :
-                    checked = c_table_row.cells[self._DetailedTableLine.CHECKED.value].text
-                    # Increment the counter
-                    if checked == 'Yes':
-                        required_checked_deviation_count += 1
-                        # Set the background color of the html table row as 'no problem' color
-                        c_table_row.background_color = self._MisraReportColor.NO_PROBLEM.value
-                    else:
-                        required_not_checked_deviation_count += 1
-                        # Set the background color of the html table row as 'warning' color
-                        c_table_row.background_color = self._MisraReportColor.WARNING.value
-
-                # If it was the mandatory violation,
-                else:  # self.__dMisraRule[ruleIdx]['Type'] == 'Mandatory'
-                    # Increment the counter
-                    mandatory_deviation_count += 1
-                    # Set the background color of the html table row as
-                    # 'mandatory color'
-                    c_table_row.background_color = self._MisraReportColor.WARNING.value
-
                 # Append a row of html detailed table according to the private
                 # variable
                 self.__deviation_table[file_path].append(c_table_row)
 
                 # Delete the dictionary
                 del c_table_row
-
-        # Save the counts in the private variables
-        self.__advisory_deviation_count  = advisory_deviation_count
-        self.__required_checked_deviation_count = required_checked_deviation_count
-        self.__required_not_checked_deviation_count = required_not_checked_deviation_count
-        self.__mandatory_deviation_count = mandatory_deviation_count
 
     def make_html_report(self, out_html:str):
         """Makes a html report
@@ -596,28 +761,93 @@ class MisraCheckReporter:
         # Make summary section
         self.__make_report_summary_section(report_html)
 
-        # Make sub summary section
-        #self.__make_report_file_info_section(report_html)
-
         # Make detailed report section
         self.__make_detailed_section(report_html)
 
         # output the html
         report_html.output_html(4, self.__report_path +'/'+ out_html)
 
+class DirectorySelector:
+    #pylint: disable=too-few-public-methods
+    ''' This class represent directory selector UI like below.
+        description: [ -selected directory- ] [browsing button]
+    '''
+    def __init__(self, frame, name:str):
+        self.__label = ttk.Label(frame, text=name+': ')
+
+        self.__directory_var = StringVar()
+        self.__directory_entry = ttk.Entry(frame, width = 100, textvariable=self.__directory_var)
+        self.__select_button = ttk.Button(
+            frame,
+            width = 5,
+            text='...',
+            command= lambda: self.__get_dir_dialog() #pylint: disable=unnecessary-lambda
+            )
+
+        self.dir_name:str = ''
+
+    def __get_dir_dialog(self):
+        this_dir = os.getcwd()
+        open_dir = filedialog.askdirectory(initialdir=this_dir)
+        if open_dir != "":
+            self.__directory_var.set(open_dir)
+            self.dir_name = open_dir
+
+    def grid(self, row_in:int):
+        ''' This method put the selector UI.
+        Args:
+             row_in: the row where this UI places.
+        '''
+        self.__label.grid(row = row_in, column = 0, pady = (0, 8))
+        self.__directory_entry.grid(row = row_in, column = 1, pady = (0, 8), sticky=tkinter.EW)
+        self.__select_button.grid(row = row_in, pady = (0, 8), column = 2)
+
+
+def create_misra_report(code_path:str, out_dir_path:str):
+    ''' This function creates html misra report.
+        This is called when the 'create' button was clicked
+    Args:
+         code_path: The path to the directory where code to be analyzed locates
+         out_dir_path: The path to the directory where the html report will be created
+    '''
+    if os.path.exists(code_path) and os.path.exists(out_dir_path):
+
+        reporter = MisraCheckReporter(code_path, out_dir_path)
+
+        # At first, load the Misra C rule information
+        reporter.get_misra_rule_dictionary()
+
+        # CppCheck starts. And save the results in the private variable
+        reporter.cpp_check()
+
+        # Output the report as html style
+        reporter.make_html_report('000_index.html')
+
+        messagebox.showinfo('Misra Reporter', 'Report files generated.')
+    else:
+        messagebox.showerror('Misra Reporter', 'Could not found input directory')
 
 if __name__ == '__main__':
 
-    code_path    = sys.argv[1]
-    out_dir_path = sys.argv[2]
+    root = Tk()
+    root.title('Misra Reporter')
+    root.grid_columnconfigure(0, weight=1)
 
-    reporter = MisraCheckReporter(code_path, out_dir_path)
+    directory_select_frame = ttk.Frame(root)
+    target_directory = DirectorySelector(directory_select_frame, 'Target code directory')
+    result_directory = DirectorySelector(directory_select_frame, 'Result output directory')
 
-    # At first, load the Misra C rule information
-    reporter.get_misra_rule_dictionary()
+    target_directory.grid(0)
+    result_directory.grid(1)
+    directory_select_frame.grid_columnconfigure(1, weight=1)
+    directory_select_frame.grid(sticky=tkinter.EW, padx = 8, pady = (8, 0))
 
-    # CppCheck starts. And save the results in the private variable
-    reporter.cpp_check()
+    create_button_frame = ttk.Frame(root)
+    create_button_frame.grid(sticky=tkinter.E)
 
-    # Output the report as html style
-    reporter.make_html_report('000_index.html')
+    create_button = ttk.Button(
+        create_button_frame, text='Create',
+        command = lambda: create_misra_report(target_directory.dir_name, result_directory.dir_name))
+    create_button.grid(padx=8, pady= (0,8))
+
+    root.mainloop()
