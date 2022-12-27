@@ -68,7 +68,8 @@ class MakeFile:
 
     def __init__(self, target_path:str = '', compiler:str = '',
                     include_path_list:Optional[List[str]] = None,
-                    linker_option_list:Optional[List[str]] = None):
+                    linker_option_list:Optional[List[str]] = None,
+                    string_out = print):
         """
         This method initializes all global variables in this module
         """
@@ -101,9 +102,7 @@ class MakeFile:
         # for all sources files to be compiled.
         self.__all_relevant_file_list:List[_RelevantFiles] = []
 
-    @staticmethod
-    def __std_output(msg:str):
-        print(msg)
+        self.__string_out = string_out
 
     @staticmethod
     def __option_list_to_command(option_list:List[str])->str:
@@ -178,7 +177,7 @@ class MakeFile:
         )
 
         # Display the command.
-        self.__std_output(compile_cmd)
+        self.__string_out(compile_cmd)
 
         # Execute the command and get the STDOUT.
         # Execute the command and get the output as binary
@@ -187,7 +186,7 @@ class MakeFile:
                                                    stderr=subprocess.STDOUT,
                                                    shell=True)
         except subprocess.CalledProcessError as exception:
-            self.__std_output(exception.output.decode())
+            self.__string_out(exception.output.decode())
             return self.CompileStatus.COMPILE_ERROR
 
         # Convert the binary into string
@@ -195,7 +194,7 @@ class MakeFile:
 
         # Display the result.
         if not whole_message == '':
-            self.__std_output(whole_message)
+            self.__string_out(whole_message)
 
         # No error message detected.
         return self.CompileStatus.COMPILE_SUCCEEDED
@@ -266,7 +265,7 @@ class MakeFile:
             # If the source file does NOT exists
             if os.path.exists(relative_files.src) is False:
                 # The source file was not found
-                self.__std_output("Error: Could not find " + relative_files.src)
+                self.__string_out("Error: Could not find " + relative_files.src)
 
                 # Error detected, set the error indicator 'TRUE'
                 is_compile_error = True
@@ -292,7 +291,7 @@ class MakeFile:
 
             else:
                 # The source file does not need to be compiled. skip.
-                self.__std_output('skip compiling ' + relative_files.obj)
+                self.__string_out('skip compiling ' + relative_files.obj)
 
         # Check the Compiling result
         # Error exists?
@@ -329,14 +328,14 @@ class MakeFile:
         cmd = f'{compiler} {option_string} -o {target} {all_object}'
 
         # Display the command
-        self.__std_output(cmd)
+        self.__string_out(cmd)
 
         try:
             whole_mssage_byte = subprocess.check_output(cmd,
                                                    stderr=subprocess.STDOUT,
                                                    shell=True)
         except subprocess.CalledProcessError as exception:
-            self.__std_output(exception.output.decode())
+            self.__string_out(exception.output.decode())
             return self.LinkStatus.LINK_ERROR
 
         # Convert the binary into string
@@ -344,7 +343,7 @@ class MakeFile:
 
         # Display the result.
         if not whole_message == '':
-            self.__std_output(whole_message)
+            self.__string_out(whole_message)
 
         # No error message detected.
         return self.LinkStatus.LINK_SUCCEEDED
@@ -401,7 +400,7 @@ class MakeFile:
         # If at least one error happened.
         if compile_states == self.WholeCompileStatus.AT_LEAST_ONE_COMPILE_ERROR:
             # Skip linking due to the error
-            self.__std_output('Skip linking, because at least one compile error happened.')
+            self.__string_out('Skip linking, because at least one compile error happened.')
             return False
 
         # If no compiled file exists
@@ -409,7 +408,7 @@ class MakeFile:
         # If the executable exists,
         if os.path.exists('./' + target_path) is True:
             # Skip linking because no updated source file, and the executable exists.
-            self.__std_output('Skip linking, because nothing has been updated.')
+            self.__string_out('Skip linking, because nothing has been updated.')
             return False
         # No compiled file, but there isn't executable file,
         # then linking is required.
@@ -461,8 +460,8 @@ class MakeFile:
             return relevant_file.obj
 
         # The input .c source file has a bad format. Display the warning message.
-        self.__std_output('Warning: The way to define the c file is not correct.')
-        self.__std_output('>>> ' + source_file)
+        self.__string_out('Warning: The way to define the c file is not correct.')
+        self.__string_out('>>> ' + source_file)
         return ''
 
     def load_json_makefile(self, json_path):
@@ -551,7 +550,7 @@ class MakeFile:
 
     def __remove_file(self, file_path:str):
         if os.path.exists(file_path):
-            self.__std_output('Removing ' + file_path.replace('\\', '/'))
+            self.__string_out('Removing ' + file_path.replace('\\', '/'))
             os.remove(file_path)
 
     def clear(self):
