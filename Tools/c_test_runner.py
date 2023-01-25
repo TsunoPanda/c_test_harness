@@ -3,13 +3,13 @@
 import os
 import sys
 import subprocess
-from py_module.timestamp_comp import TimestampComp
-from py_module.make import MakeFile, ExecutableStatus
 from c_test_runner_gui import CTestRunnerGui
 from c_test_runner_gui import RunTestParam
 from c_test_runner_common import get_all_module_under_folder
 from c_test_runner_common import TEST_CODE_CONFIG_FILE
 from c_test_runner_common import TEST_HARNESS_CONFIG_FILE
+from py_module.timestamp_comp import TimestampComp
+from py_module.make import MakeFile, ExecutableStatus, MakeConfigLoadError
 
 def get_harness_config_path(harness_path) -> str:
     ''' This function returns the path to the configuration file of the test harness
@@ -182,7 +182,11 @@ def prepare_module_block(make_obj:MakeFile, config_file_path:str):
         make_obj (MakeFile): Make file object
         config_file_path (str): Path to the configuration file
     """
-    objs = make_obj.load_json_makefile(config_file_path)
+    try:
+        objs = make_obj.load_json_makefile(config_file_path)
+    except MakeConfigLoadError as make_config_error:
+        raise make_config_error
+
     objs_exists = [obj_file for obj_file in objs
                             if os.path.exists(obj_file)]
     if TimestampComp.is_the_file_oldest(config_file_path, objs_exists) is False:
@@ -201,26 +205,29 @@ def run_test(run_test_param:RunTestParam):
 
     for test_module in run_test_param.modules:
 
-        test_module_path = f'{run_test_param.test_directory}/{test_module}'
+        try:
+            test_module_path = f'{run_test_param.test_directory}/{test_module}'
 
-        # Make/Build/Clean Harness Codes
-        make_file = MakeFile(string_out = run_test_param.text_out)
+            # Make/Build/Clean Harness Codes
+            make_file = MakeFile(string_out = run_test_param.text_out)
 
-        make_file.load_json_makefile(run_test_param.global_config_path)
+            make_file.load_json_makefile(run_test_param.global_config_path)
 
-        prepare_module_block(make_file,
-                             get_harness_config_path(run_test_param.test_harness_directory))
+            prepare_module_block(make_file,
+                                 get_harness_config_path(run_test_param.test_harness_directory))
 
-        prepare_module_block(make_file,
-                             get_the_test_config_path(test_module_path))
+            prepare_module_block(make_file,
+                                 get_the_test_config_path(test_module_path))
 
-        is_exe_valid = execute_makefile_process(make_file, run_test_param.run_type)
+            is_exe_valid = execute_makefile_process(make_file, run_test_param.run_type)
 
-        execute_test_with_message(make_file.get_target_path(),
-                                    test_module,
-                                    is_exe_valid,
-                                    run_test_param.run_type,
-                                    string_out = run_test_param.text_out)
+            execute_test_with_message(make_file.get_target_path(),
+                                      test_module,
+                                      is_exe_valid,
+                                      run_test_param.run_type,
+                                      string_out = run_test_param.text_out)
+        except MakeConfigLoadError:
+            run_test_param.text_out('Program aborted by MakeConfigLoadError')
 
 def generate_coveratge_report(out_path):
     """ This function invokes a command that generates a coverage reporting html files.
@@ -232,5 +239,5 @@ def generate_coveratge_report(out_path):
 
 
 if __name__ == "__main__":
-    gui = CTestRunnerGui(run_test, generate_coveratge_report)
-    gui.create_gui()
+    gui = CTestRunnerGui()
+    gui.create(run_test, generate_coveratge_report)
