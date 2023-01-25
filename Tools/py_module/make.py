@@ -15,6 +15,10 @@ import dataclasses
 from .timestamp_comp import TimestampComp # pylint: disable=relative-beyond-top-level
 from . import jsonc # pylint: disable=no-name-in-module
 
+class MakeConfigLoadError(Exception):
+    ''' This class represents the exception which can be happens in this module
+    '''
+
 # Return value of 'Makefile.Make' and 'Makefile.Build'
 class ExecutableStatus(Enum):
     '''
@@ -475,39 +479,52 @@ class MakeFile:
             return tmp_path.replace(r'/./', '/')
 
         with  open(json_path, 'r', encoding = 'UTF-8') as json_file:
-            makefile_dict = jsonc.load(json_file)
+            try:
+                makefile_dict = jsonc.load(json_file)
 
-            # Overwrite
-            if 'compiler' in makefile_dict:
-                self.__compiler = makefile_dict['compiler']
+                # Overwrite
+                if 'compiler' in makefile_dict:
+                    self.__compiler = makefile_dict['compiler']
 
-            # Overwrite
-            if 'target' in makefile_dict:
-                self.__target_path = get_path_from_root(makefile_dict['target'])
+                # Overwrite
+                if 'target' in makefile_dict:
+                    self.__target_path = get_path_from_root(makefile_dict['target'])
 
-            # Overwrite
-            if 'linker_option' in makefile_dict:
-                self.__linker_option_string = self.__option_list_to_command(
-                                                makefile_dict['linker_option']
-                                            )
+                # Overwrite
+                if 'linker_option' in makefile_dict:
+                    self.__linker_option_string = self.__option_list_to_command(
+                        makefile_dict['linker_option']
+                        )
 
-            # Append
-            if 'include_path' in makefile_dict:
-                include_path_list = [get_path_from_root(path) for path in makefile_dict["include_path"]]
-                include_str = self.__include_path_list_to_command(include_path_list)
-                self.__include_string  += f' {include_str}'
+                # Append
+                if 'include_path' in makefile_dict:
+                    include_path_list = [get_path_from_root(path) for path
+                                            in makefile_dict["include_path"]]
+                    include_str = self.__include_path_list_to_command(include_path_list)
+                    self.__include_string  += f' {include_str}'
 
-            # Append
-            obj_list = []
-            if 'source_file' in makefile_dict:
-                for source in makefile_dict['source_file']:
-                    obj_list.append(self.add_src(
-                        get_path_from_root(source['path']),
-                        source['opt'],
-                        get_path_from_root(source['obj_dir'])
-                        ))
+                # Get the global options
+                global_opt_list = []
+                if 'global_option' in makefile_dict:
+                    global_opt_list = makefile_dict['global_option']
 
-            return obj_list
+                # Append
+                obj_list = []
+                if 'source_file' in makefile_dict:
+                    for source in makefile_dict['source_file']:
+                        # Extend the option list
+                        option = global_opt_list + source['opt']
+                        obj_list.append(self.add_src(
+                            get_path_from_root(source['path']),
+                            option,
+                            get_path_from_root(source['obj_dir'])
+                            ))
+
+                return obj_list
+            except jsonc.JsonWithCommentsDecodeError as josnc_load_error:
+                self.__string_out('In the file '+json_path+'.')
+                self.__string_out(josnc_load_error.args[0])
+                raise MakeConfigLoadError(josnc_load_error.args[0]) from josnc_load_error
 
 
     def get_all_object_path(self):
