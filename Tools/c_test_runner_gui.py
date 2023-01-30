@@ -16,9 +16,10 @@ from c_test_runner_common import get_all_module_under_folder
 from c_test_runner_common import DEFAULT_TEST_CODE_PATH
 from c_test_runner_common import DEFAULT_TEST_HARNESS_PATH
 from c_test_runner_common import DEFAULT_GLOBAL_CONFIG_PATH
+from py_module.tk_button import MultiTaskButton
 
 @dataclass
-class RunTestParam:
+class RunTestParam: # will move to common
     """ Input parameter of run_test_func of CTestRunnerGui
     """
     modules:list[str]          = field(default_factory = list) # List of modules to be tested
@@ -234,133 +235,88 @@ class ModuleListAndMessageFrame:
 
 class TestButtonFrame:
     def __init__(self, tk_root):
-        self.tk_root             = tk_root
-        self.frame               = ttk.Frame(self.tk_root)
-
+        self.frame               = ttk.Frame(tk_root)
         self.lock                = threading.Lock()
 
         # run_test_func is the function which runs the test.
-        self.run_test_func       = None
-        self.clean_btn           = None
-        self.make_btn            = None
-        self.build_btn           = None
-        self.test_start_hook     = None
-        self.get_param_func      = None
+        self.clear_btn:MultiTaskButton           = None
+        self.make_btn:MultiTaskButton            = None
+        self.build_btn:MultiTaskButton           = None
+        self.gen_coverage_btn:MultiTaskButton    = None
+        self.test_start_hook                     = None
 
-        self.gen_coverage_btn    = None
-        self.coverage_report_dir = ""
-        self.gen_coverage_report_func = None
+    def set_test_start_hook(self, hook):
+        self.test_start_hook = hook
 
-
-    def __acquire_task(self):
+    def __test_start_hook(self):
         if self.lock.acquire(blocking = False) is False:
-            print('previous task may be working')
-            return False
-
-        self.clean_btn.configure(state = tkinter.DISABLED)
+            raise LockAcquireFailError('The previous task is working')
+        self.clear_btn.configure(state = tkinter.DISABLED)
         self.make_btn.configure(state = tkinter.DISABLED)
         self.build_btn.configure(state = tkinter.DISABLED)
         self.gen_coverage_btn.configure(state = tkinter.DISABLED)
-        return True
 
-    def __release_task(self):
+        if self.test_start_hook is not None:
+            self.test_start_hook()
+
+    def __gen_start_hook(self):
+        if self.lock.acquire(blocking = False) is False:
+            raise LockAcquireFailError('The previous task is working')
+        self.clear_btn.configure(state = tkinter.DISABLED)
+        self.make_btn.configure(state = tkinter.DISABLED)
+        self.build_btn.configure(state = tkinter.DISABLED)
+        self.gen_coverage_btn.configure(state = tkinter.DISABLED)
+
+    def __end_hook(self):
         self.lock.release()
-        self.clean_btn.configure(state = tkinter.NORMAL)
+        self.clear_btn.configure(state = tkinter.NORMAL)
         self.make_btn.configure(state = tkinter.NORMAL)
         self.build_btn.configure(state = tkinter.NORMAL)
         self.gen_coverage_btn.configure(state = tkinter.NORMAL)
 
-    def __run_test(self, test_param):
-        try:
-            self.run_test_func(test_param)
-        finally:
-            self.__release_task()
-
-    def __run_test_callback(self, run_type:str):
-        if self.__acquire_task() is False:
-            return
-
-        try:
-            if self.run_test_func is None:
-                raise UnboundLocalError('Function running the test is not defined')
-
-            if self.test_start_hook is not None:
-                self.test_start_hook()
-
-            test_param = self.get_param_func(run_type)
-
-            thread = threading.Thread(
-                target = self.__run_test,
-                args   = (test_param,)
-            )
-
-            thread.start()
-        except Exception as ex:
-            print(ex.args[0])
-            self.__release_task()
-
-    def __gen_covorage_report(self):
-        try:
-            self.gen_coverage_report_func(self.coverage_report_dir)
-        finally:
-            self.__release_task()
-
-    def __gen_covorage_report_btn_callback(self):
-        if self.__acquire_task() == False:
-            return
-
-        try:
-            this_dir = os.getcwd()
-            open_dir = filedialog.askdirectory(initialdir=this_dir)
-            if open_dir != "":
-                self.coverage_report_dir = open_dir
-
-                thread = threading.Thread(
-                    target = self.__gen_covorage_report,
-                    args=()
-                    )
-                thread.start()
-        except:
-            self.__release_task()
-
-    def create(self):
-        self.clean_btn = ttk.Button(
+    def create(self, clear_func, make_func, build_func, gen_func):
+        self.clear_btn = MultiTaskButton(
             self.frame,
             text='Clear',
-            command=lambda: self.__run_test_callback('Clear'))
-        self.clean_btn.grid(row=0, column=0, sticky=tkinter.E)
+            task=clear_func)
 
-        self.make_btn = ttk.Button(
+        self.make_btn = MultiTaskButton(
             self.frame,
             text='Make',
-            command=lambda: self.__run_test_callback('Make'))
-        self.make_btn.grid(row=0, column=1, sticky=tkinter.E)
+            task= make_func )
 
-        self.build_btn = ttk.Button(
+        self.build_btn = MultiTaskButton(
             self.frame,
             text='Build',
-            command=lambda: self.__run_test_callback('Build'))
-        self.build_btn.grid(row=0, column=2, sticky=tkinter.E)
+            task= build_func)
 
-        self.gen_coverage_btn = ttk.Button(
+        self.gen_coverage_btn = MultiTaskButton(
             self.frame,
             text='Generate Coverage Report',
-            command= lambda: self.__gen_covorage_report_btn_callback())
+            task= gen_func )
+
+        self.clear_btn.set_task_start_hook(self.__test_start_hook)
+        self.clear_btn.set_task_end_hook(self.__end_hook)
+        self.clear_btn.set_exception_hook(self.__end_hook)
+
+        self.make_btn.set_task_start_hook(self.__test_start_hook)
+        self.make_btn.set_task_end_hook(self.__end_hook)
+        self.make_btn.set_exception_hook(self.__end_hook)
+
+        self.build_btn.set_task_start_hook(self.__test_start_hook)
+        self.build_btn.set_task_end_hook(self.__end_hook)
+        self.build_btn.set_exception_hook(self.__end_hook)
+
+        self.gen_coverage_btn.set_task_start_hook(self.__gen_start_hook)
+        self.gen_coverage_btn.set_task_end_hook(self.__end_hook)
+        self.gen_coverage_btn.set_exception_hook(self.__end_hook)
+
+        self.clear_btn.grid(row=0, column=0, sticky=tkinter.E)
+        self.make_btn.grid(row=0, column=1, sticky=tkinter.E)
+        self.build_btn.grid(row=0, column=2, sticky=tkinter.E)
         self.gen_coverage_btn.grid(row=0, column=3, sticky=tkinter.E)
 
         self.frame.grid(row=2, sticky=tkinter.E, padx = 8, pady = 8)
-
-    def set_start_hook(self,func):
-        self.test_start_hook = func
-
-    def set_run_test_func(self,func):
-        self.run_test_func = func
-
-    def set_gen_report_func(self,func):
-        self.gen_coverage_report_func = func
-
-    def set_get_param_func(self, func):
-        self.get_param_func = func
 
 class CTestRunnerGui:
     def __init__(self):
@@ -401,12 +357,21 @@ class CTestRunnerGui:
         self.__update_module_list_dispayed()
 
         # Button frame
+        def clear_run():
+            test_param = self.__get_run_test_param("Clear")
+            run_func(test_param)
+        def make_run():
+            test_param = self.__get_run_test_param("Make")
+            run_func(test_param)
+        def build_run():
+            test_param = self.__get_run_test_param("Build")
+            run_func(test_param)
+        def gen_run():
+            this_dir = os.getcwd()
+            open_dir = filedialog.askdirectory(initialdir=this_dir)
+            if open_dir != "":
+                gen_func(open_dir)
         self.button_frame = TestButtonFrame(self.tk_root)
-        self.button_frame.set_run_test_func(run_func)
-        self.button_frame.set_gen_report_func(gen_func)
-        self.button_frame.set_start_hook(self.module_msg_frame.clear_text)
-        self.button_frame.set_get_param_func(self.__get_run_test_param)
-        self.button_frame.create()
-
-
+        self.button_frame.create(clear_run, make_run, build_run, gen_run)
+        self.button_frame.set_test_start_hook(self.module_msg_frame.clear_text)
         self.tk_root.mainloop()
