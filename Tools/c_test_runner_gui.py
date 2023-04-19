@@ -1,5 +1,5 @@
-''' This script provides the gui which runs c_test_runner.py.
-'''
+""" This script provides the gui which runs c_test_runner.py.
+"""
 from __future__ import annotations
 import os
 import re
@@ -19,7 +19,7 @@ from c_test_runner_common import DEFAULT_GLOBAL_CONFIG_PATH
 from py_module.tk_button import MultiTaskButton
 
 @dataclass
-class RunTestParam: # will move to common
+class RunTestParam: # TODO: will move to common
     """ Input parameter of run_test_func of CTestRunnerGui
     """
     modules:list[str]          = field(default_factory = list) # List of modules to be tested
@@ -29,11 +29,10 @@ class RunTestParam: # will move to common
     test_harness_directory:str = '' # Path to the directory where the test harness are located
     text_out                   = print # Function which output text string (e.g. print)
 
-class ModuleListAndMessageWindowFrame:
-    def __init__(self, tk_root):
-        self.tk_root                   = tk_root
-
 class DirectorySelectingFrame:
+    """ This class indicates a GUI frame including "test module directory selector",
+        "test harness directory selector", and "global configuration file selector".
+    """
     def __init__(self, tk_root):
         self.tk_root                   = tk_root
         self.frame                     = ttk.Frame(self.tk_root)
@@ -59,24 +58,39 @@ class DirectorySelectingFrame:
         return str_var
 
     def get_test_module_dir(self):
-        return (self.test_module_dir_strvar.get())
+        """ This method returns the directory path to the module to be tested
+        """
+        return self.test_module_dir_strvar.get()
 
     def get_test_harness_dir(self):
-        return (self.test_harness_dir_strvar.get())
+        """ This method returns the directory path to the test harness codes
+        """
+        return self.test_harness_dir_strvar.get()
 
     def get_global_config_file_path(self):
-        return (self.global_config_file_strvar.get())
+        """ This method returns the path to the global configuration file
+        """
+        return self.global_config_file_strvar.get()
 
     def set_test_module_dir(self, path):
-        return (self.test_module_dir_strvar.set(path))
+        """ This method sets the directory path to the module to be tested
+        """
+        self.test_module_dir_strvar.set(path)
 
     def set_test_harness_dir(self, path):
-        return (self.test_harness_dir_strvar.set(path))
+        """ This method sets the directory path to test harness codes
+        """
+        self.test_harness_dir_strvar.set(path)
 
-    def set_global_config_file_path(self):
-        return (self.global_config_file_strvar.set(path))
+    def set_global_config_file_path(self, path):
+        """ This method sets the path to the global configuration file
+        """
+        self.global_config_file_strvar.set(path)
 
     def set_update_end_hook(self, callback):
+        """ This method set the function that will be called when on of the directory or file
+            path was changed.
+        """
         self.update_end_hook = callback
 
     # test module selection
@@ -140,6 +154,8 @@ class DirectorySelectingFrame:
         self.frame.grid(sticky=tkinter.EW, padx = 8, pady = (8, 0))
 
 class ModuleListAndMessageFrame:
+    """ This class indicates a GUI frame including "module list box" and "message box"
+    """
     def __init__(self, tk_root):
         self.tk_root                   = tk_root
         self.frame                     = ttk.Frame(self.tk_root)
@@ -330,14 +346,14 @@ class CTestRunnerGui:
         self.module_msg_frame.update_module_list(module_dir)
 
     def __get_run_test_param(self, run_type):
-            test_param = RunTestParam()
-            test_param.modules                = self.module_msg_frame.get_module_list()
-            test_param.run_type               = run_type
-            test_param.global_config_path     = self.dir_sel_frame.get_global_config_file_path()
-            test_param.test_directory         = self.dir_sel_frame.get_test_module_dir()
-            test_param.test_harness_directory = self.dir_sel_frame.get_test_harness_dir()
-            test_param.text_out               = self.module_msg_frame.text_out
-            return test_param
+        test_param = RunTestParam()
+        test_param.modules                = self.module_msg_frame.get_module_list()
+        test_param.run_type               = run_type
+        test_param.global_config_path     = self.dir_sel_frame.get_global_config_file_path()
+        test_param.test_directory         = self.dir_sel_frame.get_test_module_dir()
+        test_param.test_harness_directory = self.dir_sel_frame.get_test_harness_dir()
+        test_param.text_out               = self.module_msg_frame.text_out
+        return test_param
 
     def create(self, run_func, gen_func):
         self.tk_root = Tk()
