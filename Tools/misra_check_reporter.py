@@ -41,15 +41,17 @@ class _FileListTableRow(TableRow):
     __CELL_IDX_MAN_CNT             = 4
 
     def __init__(self):
-        self.background_color = '#FFFFFF'
-        self.font_size = 14
-        self.cells = [
-            Cell(), # File path
-            Cell(), # Advisory deviation count
-            Cell(), # Required checked deviation count
-            Cell(), # Required not checked deviation count
-            Cell(), # Mandatory deviation count
+        super().__init__(
+            background_color = '#FFFFFF',
+            font_size = 14,
+            cells = [
+                Cell(), # File path
+                Cell(), # Advisory deviation count
+                Cell(), # Required checked deviation count
+                Cell(), # Required not checked deviation count
+                Cell(), # Mandatory deviation count
             ]
+        )
 
     def set_top_row_param(self):
         ''' This method set the top row parameter
@@ -107,12 +109,14 @@ class _SummaryTableRow(TableRow):
     __CELL_IDX_COUNT = 1
 
     def __init__(self):
-        self.background_color = '#FFFFFF'
-        self.font_size = 14
-        self.cells = [
-            Cell(), # Type
-            Cell(), # Deviation count
+        super().__init__(
+            background_color = '#FFFFFF',
+            font_size = 14,
+            cells = [
+                Cell(), # Type
+                Cell(), # Deviation count
             ]
+        )
 
     def set_top_row_param(self):
         ''' This method setups the top row parameter
@@ -180,16 +184,19 @@ class _DetailedTableRow(TableRow):
     __NO_NEED_CHECKED_MARKER = '-'
 
     def __init__(self):
-        self.background_color = '#FFFFFF'
-        self.font_size = 14
-        self.cells = [
-            Cell(), # Deviation line
-            Cell(), # Code
-            Cell(), # Rule index
-            Cell(), # Rule
-            Cell(), # Type
-            Cell(), # Checked
-        ]
+        super().__init__(
+            background_color = '#FFFFFF',
+            font_size = 14,
+            cells = [
+                Cell(), # Deviation line
+                Cell(), # Code
+                Cell(), # Rule index
+                Cell(), # Rule
+                Cell(), # Type
+                Cell(), # Checked
+            ]
+        )
+
 
     def set_top_row_param(self):
         ''' This method setups the top row parameter
