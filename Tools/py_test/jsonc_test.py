@@ -1,5 +1,6 @@
 import unittest
 from py_module.jsonc import load
+from py_module.jsonc import JsonWithCommentsDecodeError
 
 class BasicTest(unittest.TestCase):
 
@@ -17,3 +18,16 @@ class BasicTest(unittest.TestCase):
             self.assertEqual(read_dict['array_of_dict'][0]['number'], 1)
             self.assertEqual(read_dict['array_of_dict'][1]['string'], 'Hello')
             self.assertEqual(read_dict['array_of_dict'][1]['number'], 2)
+
+class ErrorDetectTest(unittest.TestCase):
+
+    __EXT_JSONC_FILE = './py_test/jsonc_test/error.jsonc'
+
+    def test_basic_000_read_jsonc(self):
+        with open(self.__EXT_JSONC_FILE, 'r', encoding = 'UTF-8') as json_file:
+            try:
+                read_dict = load(json_file)
+            except JsonWithCommentsDecodeError as ex:
+                pass
+            except Exception as ex:
+                assertTrue(False)
