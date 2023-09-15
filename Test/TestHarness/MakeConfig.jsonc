@@ -1,0 +1,113 @@
+{
+    /* The paths should be written in relative form from the directory where this file is located. */
+    /* Source files of the test harness  */
+    "source_file":
+    [
+        {
+            "path": "./src/CppUTest/CommandLineArguments.cpp",
+            "opt" :
+            [
+                "-MMD", /* Generate dependency file */
+                "-Wformat=0",
+                "-Wno-deprecated-declarations"
+            ],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/CommandLineTestRunner.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/JUnitTestOutput.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/MemoryLeakDetector.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/MemoryLeakWarningPlugin.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/SimpleMutex.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/SimpleString.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TeamCityTestOutput.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestFailure.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestFilter.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestHarness_c.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestMemoryAllocator.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestOutput.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestPlugin.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestRegistry.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestResult.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/TestTestingFixture.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/CppUTest/Utest.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./src/Platforms/gcc/UtestPlatform.cpp",
+            "opt" : ["-MMD", "-Wformat=0", "-Wno-deprecated-declarations"],
+            "obj_dir": "./Obj"
+        }
+    ],
+
+    "include_path":
+    [
+        "./include/CppUTest/",
+        "./include/"
+    ]
+}

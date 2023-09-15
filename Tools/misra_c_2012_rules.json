@@ -1,0 +1,1226 @@
+{
+    "Directive 1.1": 
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Any implementation-defined behavior on which the output of the program depends shall be documented and understood"
+    },
+
+    "Directive 2.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "All source files shall compile without any compilation errors"
+    },
+
+    "Directive 3.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "All code shall be traceable to documented requirements"
+    },
+
+    "Directive 4.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Run-time failures shall be minimized"
+    },
+
+    "Directive 4.2":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "All usage of assembly language should be documented"
+    },
+
+    "Directive 4.3":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Assembly language shall be encapsulated and isolated"
+    },
+
+    "Directive 4.4":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "Sections of code should not be \"commented out\""
+    },
+
+    "Directive 4.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "Identifiers in the same name space with overlapping visibility should be typographically unambiguous"
+    },
+
+    "Directive 4.6":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "Typedefs that indicate size and signedness should be used in place of the basic numerical types"
+    },
+
+    "Directive 4.7":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "If a function returns error information, then that error information shall be tested"
+    },
+
+    "Directive 4.8":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "If a pointer to a structure or union is never dereferenced within a translation unit, then the implementation of the object should be hidden"
+    },
+
+    "Directive 4.9":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "A function should be used in preference to a function-like macro where they are interchangeable"
+    },
+
+    "Directive 4.10":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Precautions shall be taken in order to prevent the contents of a header file being included more than once"
+    },
+
+    "Directive 4.11":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The validity of values passed to library functions shall be checked"
+    },
+
+    "Directive 4.12":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Dynamic memory allocation shall not be used"
+    },
+
+    "Directive 4.13":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "Functions which are designed to provide operations on a resource should be called in an appropriate sequence"
+    },
+
+    "Directive 4.14":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The validity of values received from external sources shall be checked"
+    },
+
+    "1.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The program shall contain no violations of the standard C syntax and constraints, and shall not exceed the implementation?fs translation limits"
+    },
+
+    "1.2":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "Language extensions should not be used"
+    },
+
+    "1.3":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "There shall be no occurrence of undefined or critical unspecified behaviour"
+    },
+
+    "1.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Emergent language features shall not be used "
+    },
+
+    "2.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "A project shall not contain unreachable code"
+    },
+
+    "2.2":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "There shall be no dead code"
+    },
+
+    "2.3":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A project should not contain unused type declarations"
+    },
+
+    "2.4":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A project should not contain unused tag declarations"
+    },
+
+    "2.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A project should not contain unused macro declarations"
+    },
+
+    "2.6":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A function should not contain unused label declarations"
+    },
+
+    "2.7":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "There should be no unused parameters in functions"
+    },
+
+    "3.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The character sequences /* and // shall not be used within a comment"
+    },
+
+    "3.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Line-splicing shall not be used in // comments"
+    },
+
+    "4.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Octal and hexadecimal escape sequences shall be terminated"
+    },
+
+    "4.2":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "Trigraphs should not be used"
+    },
+
+    "5.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "External identifiers shall be distinct"
+    },
+
+    "5.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Identifiers declared in the same scope and name space shall be distinct"
+    },
+
+    "5.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "An identifier declared in an inner scope shall not hide an identifier declared in an outer scope"
+    },
+
+    "5.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Macro identifiers shall be distinct"
+    },
+
+    "5.5":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Identifiers shall be distinct from macro names"
+    },
+
+    "5.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A typedef name shall be a unique identifier"
+    },
+
+    "5.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A tag name shall be a unique identifier"
+    },
+
+    "5.8":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Identifiers that define objects or functions with external linkage shall be unique"
+    },
+
+    "5.9":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "Identifiers that define objects or functions with internal linkage should be unique"
+    },
+
+    "6.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Bit-fields shall only be declared with an appropriate type"
+    },
+
+    "6.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Single-bit named bit fields shall not be of a signed type"
+    },
+
+    "7.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Octal constants shall not be used"
+    },
+
+    "7.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A \"u\" or \"U\" suffix shall be applied to all integer constants that are represented in an unsigned type"
+    },
+
+    "7.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The lowercase character \"l\" shall not be used in a literal suffix"
+    },
+
+    "7.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "a string literal shall not be assigned to an object unless the object's type is \"pointer to const-qualified char\""
+    },
+
+    "8.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Types shall be explicitly specified"
+    },
+
+    "8.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Function types shall be in prototype form with named parameters"
+    },
+
+    "8.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "All declarations of an object or function shall use the same names and type qualifiers"
+    },
+
+    "8.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A compatible declaration shall be visible when an object or function with external linkage is defined"
+    },
+
+    "8.5":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "An external object or function shall be declared once in one and only one file"
+    },
+
+    "8.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "An identifier with external linkage shall have exactly one external definition"
+    },
+
+    "8.7":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "Functions and objects should not be defined with external linkage if they are referenced in only one translation unit"
+    },
+
+    "8.8":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The static storage class specifier shall be used in all declarations of objects and functions that have internal linkage"
+    },
+
+    "8.9":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "An object should be defined at block scope if its identifier only appears in a single function"
+    },
+
+    "8.10":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "An inline function shall be declared with the static storage class"
+    },
+
+    "8.11":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "When an array with external linkage is declared, its size should be explicitly specified"
+    },
+
+    "8.12":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Within an enumerator list, the value of an implicitly-specified enumeration constant shall be unique"
+    },
+
+    "8.13":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "A pointer should point to a const-qualified type whenever possible"
+    },
+
+    "8.14":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The restrict type qualifier shall not be used"
+    },
+
+    "9.1":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "The value of an object with automatic storage duration shall not be read before it has been set"
+    },
+
+    "9.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The initializer for an aggregate or union shall be enclosed in braces"
+    },
+
+    "9.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Arrays shall not be partially initialized"
+    },
+
+    "9.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "An element of an object shall not be in initialized more than once"
+    },
+
+    "9.5":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Where designated initializers are used to initialize an array object the size of the array shall be specified explicitly"
+    },
+
+    "10.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Operands shall not be of an inappropriate essential type"
+    },
+
+    "10.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Expressions of essentially character type shall not be used inappropriately in addition and subtraction operations"
+    },
+
+    "10.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The value of an expression shall not be assigned to an object with a narrower essential type or of a different essential type category"
+    },
+
+    "10.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Both operands of an operator in which the usual arithmetic conversions are performed shall have the same essential type category"
+    },
+
+    "10.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The value of an expression should not be cast to an inappropriate essential type"
+    },
+
+    "10.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The value of a composite expression shall not be assigned to an object with wider essential type"
+    },
+
+    "10.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "If a composite expression is used as one operand of an operator in which the usual arithmetic conversions are performed then the other operand shall not have wider essential type"
+    },
+
+    "10.8":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The value of a composite expression shall not be cast to a different essential type category or a wider essential type"
+    },
+
+    "11.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Conversions shall not be performed between a pointer to a function and any other type"
+    },
+
+    "11.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Conversions shall not be performed between a pointer to an incomplete type and any other type"
+    },
+
+    "11.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A cast shall not be performed between a pointer to object type and a pointer to a different object type"
+    },
+
+    "11.4":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A conversion should not be performed between a pointer to object and an integer type"
+    },
+
+    "11.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A conversion should not be performed from pointer to void into pointer to object"
+    },
+
+    "11.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A cast shall not be performed between pointer to void and an arithmetic type"
+    },
+
+    "11.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A cast shall not be performed between pointer to object and a non-integer arithmetic type"
+    },
+
+    "11.8":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A cast shall not remove any const or volatile qualification from the type pointed to by a pointer"
+    },
+
+    "11.9":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The macro NULL shall be the only permitted form of integer null pointer constant"
+    },
+
+    "12.1":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The precedence of operators within expressions should be made explicit"
+    },
+
+    "12.2":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The right hand operand of a shift operator shall lie in the range zero to one less than the width in bits of the essential type of the left hand operand"
+    },
+
+    "12.3":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The comma operator should not be used"
+    },
+
+    "12.4":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "Evaluation of constant expressions should not lead to unsigned integer wrap-around"
+    },
+
+    "12.5":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Decidable",
+        "Rule": "The sizeof operator shall not have an operand which is a function parameter declared as \"array of type\""
+    },
+
+    "13.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Initializer lists shall not contain persistent side effects"
+    },
+
+    "13.2":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The value of an expression and its persistent side effects shall be the same under all permitted evaluation orders"
+    },
+
+    "13.3":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A full expression containing an increment (++) or decrement (--) operator should have no other potential side effects other than that caused by the increment or decrement operator"
+    },
+
+    "13.4":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The result of an assignment operator should not be used"
+    },
+
+    "13.5":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The right hand operand of a logical && or || operator shall not contain persistent side effects"
+    },
+
+    "13.6":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Decidable",
+        "Rule": "The operand of the sizeof operator shall not contain any expression which has potential side effects"
+    },
+
+    "14.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "A loop counter shall not have essentially floating type"
+    },
+
+    "14.2":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "A for loop shall be well-formed"
+    },
+
+    "14.3":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Controlling expressions shall not be invariant"
+    },
+
+    "14.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The controlling expression of an if statement and the controlling expression of an iteration-statement shall have essentially Boolean type"
+    },
+
+    "15.1":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The goto statement should not be used"
+    },
+
+    "15.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The goto statement shall jump to a label declared later in the same function"
+    },
+
+    "15.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Any label referenced by a goto statement shall be declared in the same block, or in any block enclosing the goto statement"
+    },
+
+    "15.4":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "There should be no more than one break or goto statement used to terminate any iteration statement"
+    },
+
+    "15.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "A function should have a single point of exit at the end"
+    },
+
+    "15.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The body of an iteration-statement or a selection-statement shall be a compound-statement"
+    },
+
+    "15.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "All if ... else if constructs shall be terminated with an else statement"
+    },
+
+    "16.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "All switch statements shall be well-formed"
+    },
+
+    "16.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A switch label shall only be used when the most closely-enclosing compound statement is the body of a switch statement"
+    },
+
+    "16.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "An unconditional break statement shall terminate every switch-clause"
+    },
+
+    "16.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Every switch statement shall have a default label"
+    },
+
+    "16.5":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A default label shall appear as either the first or the last switch label of a switch statement"
+    },
+
+    "16.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Every switch statement shall have at least two switch-clauses"
+    },
+
+    "16.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A switch-expression shall not have essentially Boolean type"
+    },
+
+    "17.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The features of <stdarg.h> shall not be used"
+    },
+
+    "17.2":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Functions shall not call themselves, either directly or indirectly"
+    },
+
+    "17.3":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Decidable",
+        "Rule": "A function shall not be declared implicitly"
+    },
+
+    "17.4":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Decidable",
+        "Rule": "All exit paths from a function with non-void return type shall have an explicit return statement with an expression"
+    },
+
+    "17.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "The function argument corresponding to a parameter declared to have an array type shall have an appropriate number of elements"
+    },
+
+    "17.6":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Decidable",
+        "Rule": "The declaration of an array parameter shall not contain the static keyword between the [ ]"
+    },
+
+    "17.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The value returned by a function having non-void return type shall be used"
+    },
+
+    "17.8":
+    {
+        "Type": "Advisory",
+        "Decidable": "Undecidable",
+        "Rule": "A function parameter should not be modified"
+    },
+
+    "18.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "A pointer resulting from arithmetic on a pointer operand shall address an element of the same array as that pointer operand"
+    },
+
+    "18.2":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "Subtraction between pointers shall only be applied to pointers that address elements of the same array"
+    },
+
+    "18.3":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The relational operators >, >=, < and <= shall not be applied to objects of pointer type except where they point into the same object"
+    },
+
+    "18.4":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The +, -, += and -= operators should not be applied to an expression of pointer type"
+    },
+
+    "18.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "Declarations should contain no more than two levels of pointer nesting"
+    },
+
+    "18.6":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The address of an object with automatic storage shall not be copied to another object that persists after the first object has ceased to exist"
+    },
+
+    "18.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Flexible array members shall not be declared"
+    },
+
+    "18.8":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Variable-length array types shall not be used"
+    },
+
+    "19.1":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "An object shall not be assigned or copied to an overlapping object"
+    },
+
+    "19.2":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The union keyword should not be used"
+    },
+
+    "20.1":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "#include directives should only be preceded by preprocessor directives or comments"
+    },
+
+    "20.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The ', \" or \\ characters and the /* or // character sequences shall not occur in a header file name"
+    },
+
+    "20.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The #include directive shall be followed by either a <filename> or \"filename\" sequence"
+    },
+
+    "20.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A macro shall not be defined with the same name as a keyword"
+    },
+
+    "20.5":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "#undef should not be used"
+    },
+
+    "20.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Tokens that look like a preprocessing directive shall not occur within a macro argument"
+    },
+
+    "20.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "Expressions resulting from the expansion of macro parameters shall be enclosed in parentheses"
+    },
+
+    "20.8":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The controlling expression of a #if or #elif preprocessing directive shall evaluate to 0 or 1"
+    },
+
+    "20.9":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "All identifiers used in the controlling expression of #if or #elif preprocessing directives shall be #define'd before evaluation"
+    },
+
+    "20.10":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The # and ## preprocessor operators should not be used"
+    },
+
+    "20.11":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A macro parameter immediately following a # operator shall not immediately be followed by a ## operator"
+    },
+
+    "20.12":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A macro parameter used as an operand to the # or ## operators, which is itself subject to further macro replacement, shall only be used as an operand to these operators"
+    },
+
+    "20.13":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A line whose first token is # shall be a valid preprocessing directive"
+    },
+
+    "20.14":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "All #else, #elif and #endif preprocessor directives shall reside in the same file as the #if, #ifdef or #ifndef directive to which they are related"
+    },
+
+    "21.1":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "#define and #undef shall not be used on a reserved identifier or reserved macro name"
+    },
+
+    "21.2":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "A reserved identifier or macro name shall not be declared"
+    },
+
+    "21.3":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The memory allocation and deallocation functions of <stdlib.h> shall not be used"
+    },
+
+    "21.4":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The standard header file<setjmp.h>shall not be used"
+    },
+
+    "21.5":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The standard header file <signal.h> shall not be used"
+    },
+
+    "21.6":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The Standard Library input/output functions shall not be used"
+    },
+
+    "21.7":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The atof, atoi, atol and atoll functions of <stdlib.h> shall not be used"
+    },
+
+    "21.8":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The standard library termination functions of <stdlib.h> shall not be used"
+    },
+
+    "21.9":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The library functions bsearch and qsort of <stdlib.h> shall not be used"
+    },
+
+    "21.10":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The Standard Library time and date functions shall not be used"
+    },
+
+    "21.11":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The standard header file <tgmath.h> shall not be used"
+    },
+
+    "21.12":
+    {
+        "Type": "Advisory",
+        "Decidable": "Decidable",
+        "Rule": "The exception handling features of <fenv.h> should not be used"
+    },
+
+    "21.13":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "Any value passed to a function in <ctype.h> shall be representable as an unsigned char or be the value EOF "
+    },
+
+    "21.14":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The Standard Library function memcmp shall not be used to compare null terminated strings"
+    },
+
+    "21.15":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The pointer arguments to the Standard Library functions memcpy, memmove and memcmp shall be pointers to qualified or unqualified versions of compatible types"
+    },
+
+    "21.16":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The pointer arguments to the Standard Library function memcmp shallpoint to either a pointer type, an essentially signed type, an essentially unsigned type, an essentially Boolean type or an essentially enum type"
+    },
+
+    "21.17":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "Use of the string handling functions from <string.h> shall not result in accesses beyond the bounds of the objects referenced by their pointer parameters"
+    },
+
+    "21.18":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "The size_t argument passed to any function in <string.h> shall have an appropriate value"
+    },
+
+    "21.19":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "The pointers returned by the Standard Library functions localeconv, getenv, setlocale or, strerror shall only be used as if they have pointer to const-qualified type"
+    },
+
+    "21.20":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "The pointer returned by the Standard Library functions asctime, ctime, gmtime, localtime, localeconv, getenv, setlocale or strerror shall not be used following a subsequent call to the same function"
+    },
+
+    "21.21":
+    {
+        "Type": "Required",
+        "Decidable": "Decidable",
+        "Rule": "The standard library function system of <stdlib.h> shall not be used"
+    },
+
+    "22.1":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "All resources obtained dynamically by means of Standard Library functions shall be explicitly released"
+    },
+
+    "22.2":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "A block of memory shall only be freed if it was allocated by means of a Standard Library function"
+    },
+
+    "22.3":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The same file shall not be open for read and write access at the same time on different streams"
+    },
+
+    "22.4":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "There shall be no attempt to write to a stream which has been opened as read-only"
+    },
+
+    "22.5":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "A pointer to a FILE object shall not be dereferenced"
+    },
+
+    "22.6":
+    {
+        "Type": "Mandatory",
+        "Decidable": "Undecidable",
+        "Rule": "The value of a pointer to a FILE shall not be used after the associated stream has been closed"
+    },
+
+    "22.7":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The macro EOF shall only be compared with the unmodified return value from any Standard Library function capable of returning EOF"
+    },
+
+    "22.8":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The value of errno shall be set to zero prior to a call to an errno-setting-function"
+    },
+
+    "22.9":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The value of errno shall be tested against zero after calling an errno-setting-function"
+    },
+
+    "22.10":
+    {
+        "Type": "Required",
+        "Decidable": "Undecidable",
+        "Rule": "The value of errno shall only be tested when the last function to be called was an errno-setting-function"
+    }
+}

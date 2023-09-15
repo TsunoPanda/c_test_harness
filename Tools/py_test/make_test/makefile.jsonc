@@ -1,0 +1,39 @@
+{
+    /* Compiler specification */
+    "compiler": "g++",
+
+    "target" : "./test.exe",
+
+    "linker_option":
+    [
+        "-MMD", /* Make dependency file */
+        "-Wall",
+        "-O2"
+    ],
+
+    /* Path should be written in relative form from the directory where this file is located */
+    "source_file":
+    [
+        {
+            "path": "./main.c",
+            "opt" :
+            [ 
+                "-MMD",           /* Make dependency file */
+                "-Wall",
+                "-O2"            /* No optimization. Required for accurate coverage check. */
+            ],
+            "obj_dir": "./Obj"
+        },
+
+        {
+            "path": "./math/math.c",
+            "opt" : ["-MMD", "-Wall", "-O2"],
+            "obj_dir": "./LedDriver/Obj"
+        }
+    ],
+
+    "include_path":
+    [
+        "./math/"
+    ]
+}
