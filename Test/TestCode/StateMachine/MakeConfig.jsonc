@@ -1,0 +1,42 @@
+{
+    "target" : "./Obj/StateMachine.exe",
+
+    "global_option":
+    [
+        "-MMD",  /* Make dependency file */
+        "-Wall"  /* Output all warnings */
+    ],
+
+    "source_file":
+    [
+        /* Product Codes */
+        {
+            "path": "../../../ProductCode/StateMachine/StateMachine.c",
+            "opt" :
+            [ 
+                "-O0",            /* No optimization. Required for accurate coverage check. */
+                "-fprofile-arcs", /* For coverage check */
+                "-ftest-coverage" /* For coverage check */
+            ],
+            "obj_dir": "./Obj"
+        },
+
+        /* Test Codes */
+        {
+            "path": "./StateMachineTest.cpp",
+            "opt" : ["-O2"],
+            "obj_dir": "./Obj"
+        },
+        {
+            "path": "./StateMachineTestRunner.cpp",
+            "opt" : ["-O2"],
+            "obj_dir": "./Obj"
+        }
+    ],
+
+    "include_path":
+    [
+        "../../../ProductCode/StateMachine/"
+    ]
+
+}
