@@ -6,9 +6,9 @@ from typing import Final
 
 TEST_CODE_CONFIG_FILE:Final[str]      = 'MakeConfig.jsonc'
 TEST_HARNESS_CONFIG_FILE:Final[str]   = 'MakeConfig.jsonc'
-DEFAULT_TEST_CODE_PATH:Final[str]     = '../Test/TestCode'
-DEFAULT_TEST_HARNESS_PATH:Final[str]  = '../Test/TestHarness'
-DEFAULT_GLOBAL_CONFIG_PATH:Final[str] = '../Test/GlobalMakeConfig.jsonc'
+DEFAULT_TEST_CODE_PATH:Final[str]     = '../Example/TestCode'
+DEFAULT_TEST_HARNESS_PATH:Final[str]  = '../TestHarness'
+DEFAULT_GLOBAL_CONFIG_PATH:Final[str] = '../GlobalMakeConfig.jsonc'
 
 def get_all_module_under_folder(folder_path:str):
     """ This function returns the list of folders containing the file named TEST_CODE_CONFIG_FILE

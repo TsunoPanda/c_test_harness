@@ -11,7 +11,7 @@
     [
         /* Product Codes */
         {
-            "path": "../../../ProductCode/LedDriver/LedDriver.c",
+            "path": "../../ProductCode/LedDriver/LedDriver.c",
             "opt" :
             [ 
                 "-O0",            /* No optimization. Required for accurate coverage check. */
@@ -36,7 +36,7 @@
 
     "include_path":
     [
-        "../../../ProductCode/LedDriver/"
+        "../../ProductCode/LedDriver/"
     ]
 
 }
