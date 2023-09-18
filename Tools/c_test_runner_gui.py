@@ -383,10 +383,11 @@ class CTestRunnerGui:
             test_param = self.__get_run_test_param("Build")
             run_func(test_param)
         def gen_run():
-            this_dir = os.getcwd()
-            open_dir = filedialog.askdirectory(initialdir=this_dir)
+            init_dir = self.dir_sel_frame.get_test_module_dir()
+            in_dir   = filedialog.askdirectory(initialdir=init_dir,title="Select source and test code directory")
+            open_dir = filedialog.askdirectory(initialdir=init_dir, title="Select output directory")
             if open_dir != "":
-                gen_func(open_dir)
+                gen_func(in_dir, open_dir)
         self.button_frame = TestButtonFrame(self.tk_root)
         self.button_frame.create(clear_run, make_run, build_run, gen_run)
         self.button_frame.set_test_start_hook(self.module_msg_frame.clear_text)

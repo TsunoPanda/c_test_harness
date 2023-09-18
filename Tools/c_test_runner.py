@@ -229,12 +229,12 @@ def run_test(run_test_param:RunTestParam):
         except MakeConfigLoadError:
             run_test_param.text_out('Program aborted by MakeConfigLoadError')
 
-def generate_coveratge_report(out_path):
+def generate_coveratge_report(in_path, out_path):
     """ This function invokes a command that generates a coverage reporting html files.
     Args:
          out_path: Path to the folder in which the generated files are going to be stored.
     """
-    cmd = f"gcovr -r ../ --html-details --output={out_path}/coverage.html"
+    cmd = f"gcovr -r {in_path} --html-details --output={out_path}/coverage.html"
     subprocess.check_output(cmd,stderr=subprocess.STDOUT,shell=True)
 
 
