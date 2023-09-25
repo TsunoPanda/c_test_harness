@@ -547,6 +547,8 @@ class MakeFile:
         Then return the compile state.
         """
 
+        TimestampComp.clear_time_stamp_dict()
+
         # Compile all the sources and get the status
         compile_state = self.__compile_sources(self.__compiler, self.__include_string)
 
